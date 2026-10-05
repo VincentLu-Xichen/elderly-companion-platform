@@ -1,0 +1,30 @@
+# Local IDE settings
+.idea/
+.vscode/
+*.iml
+
+# Python environments and generated files
+**/.venv/
+**/venv/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Local runtime data
+*.db
+*.sqlite
+*.sqlite3
+logs/
+
+# OS and build output
+.DS_Store
+dist/
+build/

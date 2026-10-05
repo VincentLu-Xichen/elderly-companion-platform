@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ESDS Control Panel
+Comment=Manage ESDS Agent, Daily Chat voice, and startup settings
+Exec=python3 /home/pi/ESDS/tools/esds_control_panel.py
+Terminal=false
+Categories=Utility;
+StartupNotify=true

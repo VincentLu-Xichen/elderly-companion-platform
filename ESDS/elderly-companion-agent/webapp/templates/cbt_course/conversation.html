@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="纯对话式认知行为练习课">
+  <title>第 {{ conversation.course.lesson.number }} 课 · {{ conversation.course.lesson.title }}</title>
+  <link rel="stylesheet" href="/static/styles.css?v=20260731-course">
+  <link rel="stylesheet" href="/static/cbt_course/course.css?v=20260731-2">
+  <script src="/static/cbt_course/course.js?v=20260731-2" defer></script>
+</head>
+<body data-course-page="conversation">
+  <main
+    class="course-conversation"
+    data-conversation-id="{{ conversation.id }}"
+    data-completed="{{ 'true' if conversation.course.completed else 'false' }}"
+  >
+    <header class="conversation-header">
+      <a href="/cbt-course" class="conversation-back">← 返回课程目录</a>
+      <div class="conversation-title">
+        <p>LESSON {{ "%02d"|format(conversation.course.lesson.number) }} · {{ conversation.lesson_version }}</p>
+        <h1>{{ conversation.course.lesson.title }}</h1>
+      </div>
+      <div class="conversation-progress">
+        <span id="course-phase">{{ conversation.course.phase }}</span>
+        <strong id="course-progress-value">{{ conversation.course.progress_percent }}%</strong>
+        <progress id="course-progress-bar" max="100" value="{{ conversation.course.progress_percent }}">
+          {{ conversation.course.progress_percent }}%
+        </progress>
+      </div>
+    </header>
+
+    <section class="conversation-stage">
+      <div id="course-message-list" class="course-message-list" aria-live="polite">
+        {% for message in conversation.messages %}
+        <article class="course-message {{ 'learner' if message.role == 'learner' else 'guide' }}">
+          <span>{{ "我的回答" if message.role == "learner" else "课程引导" }}</span>
+          <div class="course-message-bubble">{{ message.content }}</div>
+          {% if message.attachment %}
+            {% if message.attachment.kind == "image" %}
+            <figure class="course-attachment">
+              <img src="{{ message.attachment.src }}" alt="{{ message.attachment.alt }}">
+              {% if message.attachment.caption %}<figcaption>{{ message.attachment.caption }}</figcaption>{% endif %}
+            </figure>
+            {% elif message.attachment.kind == "formulation" %}
+            <section class="course-formulation-text" aria-label="历史认知行为模型">
+              历史记录：
+              情境：{{ message.attachment.situation }}
+              想法：{{ message.attachment.thought }}{% if message.attachment.thought_belief is not none %}（相信程度 {{ message.attachment.thought_belief }}/10）{% endif %}
+              情绪：{{ message.attachment.emotion }}{% if message.attachment.emotion_intensity is not none %}（强烈程度 {{ message.attachment.emotion_intensity }}/10）{% endif %}
+              行为：{{ message.attachment.behavior }}
+            </section>
+            {% endif %}
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <form id="course-message-form" class="conversation-composer">
+      <label for="course-message-input">写下你的回答</label>
+      <textarea
+        id="course-message-input"
+        maxlength="2000"
+        rows="3"
+        placeholder="{{ '本课已完成，可返回课程目录查看记录。' if conversation.course.completed else '像聊天一样写下你的回答……' }}"
+        {% if conversation.course.completed %}disabled{% endif %}
+        required
+      ></textarea>
+      <div class="conversation-composer-meta">
+        <span><i></i>回答与进度将加密保存</span>
+        <span id="course-char-count">0 / 2000</span>
+        <button class="conversation-send" type="submit" {% if conversation.course.completed %}disabled{% endif %}>发送 <b>↗</b></button>
+      </div>
+    </form>
+  </main>
+  <div id="course-toast" class="course-toast" role="status" aria-live="polite"></div>
+</body>
+</html>

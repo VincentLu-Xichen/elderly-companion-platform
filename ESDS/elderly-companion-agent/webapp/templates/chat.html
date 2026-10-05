@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}进行中的对话 · 陪伴对话实验室{% endblock %}
+{% block page %}chat{% endblock %}
+{% block header_actions %}<div class="header-actions"><button id="delete-conversation" class="header-button danger">删除记录</button><button id="end-conversation" class="header-button">{{ "返回首页" if conversation.status != "active" else "结束并返回" }}</button></div>{% endblock %}
+{% block content %}
+<section class="chat-shell" data-conversation-id="{{ conversation.id }}">
+  <aside class="chat-sidebar">
+    {% if conversation.scenario %}
+    <details class="scenario-mini" open>
+      <summary><span>我的角色语境</span><i>展开 / 收起</i></summary>
+      <div class="scenario-mini-content">
+        <div class="scenario-mini-identity">
+          <span>{{ conversation.scenario.age }}<small>岁</small></span>
+          <div>
+            <strong>{{ conversation.scenario.title }}</strong>
+            <small>情境版本 {{ conversation.scenario.version }}</small>
+          </div>
+        </div>
+        <dl class="scenario-context-list">
+          <div><dt>生活背景</dt><dd>{{ conversation.scenario.background }}</dd></div>
+          <div><dt>最近发生</dt><dd>{{ conversation.scenario.recent_event }}</dd></div>
+          <div><dt>当时想到</dt><dd>“{{ conversation.scenario.automatic_thought }}”</dd></div>
+          <div><dt>最怕意味</dt><dd>{{ conversation.scenario.deeper_meaning }}</dd></div>
+          <div><dt>心里规则</dt><dd>{{ conversation.scenario.intermediate_belief }}</dd></div>
+          <div><dt>内心感受</dt><dd>{{ conversation.scenario.emotion }}</dd></div>
+          <div><dt>当前表现</dt><dd>{{ conversation.scenario.behavior }}</dd></div>
+          <div><dt>应对方式</dt><dd>{{ conversation.scenario.coping_strategy|default(conversation.scenario.behavior, true) }}</dd></div>
+          <div><dt>可用线索</dt><dd>{{ conversation.scenario.resources }}</dd></div>
+        </dl>
+        <div class="mini-opening"><span>开场参考</span><p>“{{ conversation.scenario.opening }}”</p></div>
+        <div class="scenario-mini-rules">
+          <strong>扮演提示</strong>
+          <ul>{% for rule in conversation.scenario.rules %}<li>{{ rule }}</li>{% endfor %}</ul>
+        </div>
+      </div>
+    </details>
+    {% else %}
+    <div class="free-chat-note">本轮为自由日常陪聊，不设置固定角色语境。</div>
+    {% endif %}
+    <p class="privacy-note">语境卡仅供你查看，不会发送给 Agent。</p>
+  </aside>
+  <div
+    id="chat-resizer"
+    class="chat-resizer"
+    role="separator"
+    aria-label="调整 Session 与对话记录的宽度"
+    aria-orientation="vertical"
+    aria-valuemin="300"
+    aria-valuemax="560"
+    aria-valuenow="360"
+    tabindex="0"
+  ></div>
+  <div class="chat-main">
+    <div class="chat-heading">
+      <div>
+        <p class="eyebrow">SESSION · {{ "历史 CBT 记录" if conversation.mode == "cbt" else "Daily Chat" }}</p>
+        <h2>对话记录</h2>
+      </div>
+      <div class="chat-heading-meta">
+        <span class="chat-live-status"><i></i>{{ "实验进行中" if conversation.status == "active" else "实验已结束" }}</span>
+        <span class="chat-meta-item"><small>匿名参与者</small><strong>{{ conversation.participant_label }}</strong></span>
+        <span class="chat-meta-item"><small>开始时间（UTC+8）</small><strong>{{ conversation.started_at|utc8 }}</strong></span>
+        <span class="ai-label">AI 生成内容</span>
+      </div>
+    </div>
+    <div id="message-list" class="message-list" aria-live="polite">
+      {% if not conversation.messages %}
+      <div class="chat-empty" id="chat-empty">
+        <span>02</span>
+        {% if conversation.scenario %}
+        <p>准备好后，请参考左侧“我的角色语境”，用角色的口吻说出第一句话。你也可以直接参考其中的“开场参考”。</p>
+        {% else %}
+        <p>准备好后，用自然的老人说话方式开始这次日常对话。</p>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% for message in conversation.messages %}
+      <div class="message {{ 'user' if message.role == 'elderly' else 'agent' }}">
+        <span class="message-author">{{ "你扮演的老人" if message.role == "elderly" else "Agent" }}</span>
+        <p>{{ message.content }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <form id="message-form" class="composer" {% if conversation.status != "active" or conversation.mode != "daily_chat" %}hidden{% endif %}>
+      <label class="sr-only" for="message-input">输入老人要说的话</label>
+      <textarea id="message-input" maxlength="2000" rows="2" placeholder="用老人角色的口吻输入……" required></textarea>
+      <div class="composer-footer"><span id="char-count">0 / 2000</span><button class="send-button" type="submit">发送 <span>↗</span></button></div>
+    </form>
+    {% if conversation.mode == "cbt" %}<div class="ended-banner">旧 CBT 角色会话已归档，仅供历史查看与导出，不再生成新回复。</div>
+    {% elif conversation.status != "active" %}<div class="ended-banner">本次会话已结束，记录仍可在实验首页查看。</div>{% endif %}
+  </div>
+</section>
+{% endblock %}

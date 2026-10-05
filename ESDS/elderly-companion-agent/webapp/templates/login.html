@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}邀请码登录 · 陪伴对话实验室{% endblock %}
+{% block page %}login{% endblock %}
+{% block content %}
+<section class="login-shell">
+  <div class="login-copy">
+    <p class="eyebrow">CLASSROOM ROLEPLAY STUDY</p>
+    <h1>把每一轮对话，<br>变成可复盘的实验。</h1>
+    <p>你将根据给定语境扮演一位老人，与不同对话 Agent 交流。系统会完整保存实验过程，帮助研究团队比较对话策略。</p>
+    <div class="feature-strip">
+      <span>匿名参与</span><span>情境扮演</span><span>完整审计</span>
+    </div>
+  </div>
+  <form id="invite-form" class="login-card">
+    <span class="step-number">01</span>
+    <h2>输入你的实验邀请码</h2>
+    <p>每位同学使用独立邀请码，系统不会要求姓名或手机号。</p>
+    <label for="invite-code">邀请码</label>
+    <input id="invite-code" name="code" autocomplete="one-time-code" placeholder="例如：demo001" required maxlength="200">
+    <button class="primary-button full" type="submit">进入实验台 <span>→</span></button>
+    <p class="form-error" id="form-error" role="alert"></p>
+  </form>
+</section>
+{% endblock %}

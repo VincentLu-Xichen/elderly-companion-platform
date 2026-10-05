@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用于老年人角色扮演对话实验的测试平台">
+  <title>{% block title %}陪伴对话实验室{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}?v=20260723-9">
+  <script src="{{ url_for('static', path='app.js') }}?v=20260723-9" defer></script>
+</head>
+<body data-page="{% block page %}base{% endblock %}">
+  <header class="topbar">
+    <a class="brand" href="/app" aria-label="返回实验首页">
+      <span class="brand-mark">伴</span>
+      <span><strong>陪伴对话实验室</strong><small>ROLEPLAY RESEARCH CONSOLE</small></span>
+    </a>
+    {% block header_actions %}{% endblock %}
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

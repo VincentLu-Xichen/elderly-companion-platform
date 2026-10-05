@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}实验首页 · 陪伴对话实验室{% endblock %}
+{% block page %}home{% endblock %}
+{% block header_actions %}
+<div class="header-actions">
+  <span class="participant-pill">{{ participant.label }}</span>
+  <a class="header-button" href="#conversation-history">对话历史</a>
+  <button id="logout-button" class="header-button danger" type="button">退出登录</button>
+</div>
+{% endblock %}
+{% block content %}
+<section class="dashboard-shell">
+  <div class="hero-panel">
+    <div>
+      <p class="eyebrow">NEW CONVERSATION</p>
+      <h1>今天想测试哪一种<br>对话方式？</h1>
+      <p class="hero-note">Daily Chat 用于日常陪聊测试；CBT 课程通过八节纯对话课程完成学习。</p>
+    </div>
+    <div class="mode-grid {% if not consented %}is-locked{% endif %}" id="mode-grid">
+      <button class="mode-card daily" data-mode="daily_chat" {% if not consented %}disabled{% endif %}>
+        <span class="mode-index">A</span>
+        <span class="mode-icon">日</span>
+        <strong>Daily Chat</strong>
+        <small>自然、轻松的日常陪聊</small>
+        <span class="mode-arrow">开始对话 →</span>
+      </button>
+      <a class="mode-card cbt" href="{{ '/cbt-course' if consented else '#consent-card' }}">
+        <span class="mode-index">B</span>
+        <span class="mode-icon">思</span>
+        <strong>CBT 课程</strong>
+        <small>八节课，用聊天完成每一步学习</small>
+        <span class="mode-arrow">浏览课程 →</span>
+      </a>
+    </div>
+  </div>
+
+  <section class="roleplay-brief" aria-labelledby="roleplay-title">
+    <span class="roleplay-icon" aria-hidden="true">学</span>
+    <div>
+      <p>TWO LEARNING MODES</p>
+      <h2 id="roleplay-title">陪聊测试与课程学习，使用方式各不相同</h2>
+    </div>
+    <p>Daily Chat 延续老人角色扮演测试；CBT 课程面向学习者本人，通过文字对话认识想法、情绪与行为。课程不会分配或向模型发送老人语境卡。</p>
+  </section>
+
+  <section class="cbt-intro" aria-labelledby="cbt-intro-title">
+    <div class="cbt-intro-heading">
+      <div>
+        <p class="eyebrow">ABOUT CBT</p>
+        <h2 id="cbt-intro-title">什么是 CBT？</h2>
+      </div>
+      <p class="cbt-intro-copy">认知行为疗法（Cognitive Behavioral Therapy，CBT）关注具体情境中想法、情绪与行为之间的相互影响，帮助人们更清楚地理解困扰，并寻找更平衡、可行的应对方式。</p>
+    </div>
+    <div class="cbt-steps">
+      <article><span>01</span><strong>从具体经历开始</strong><small>说清发生了什么，以及当时最先冒出的想法和感受。</small></article>
+      <article><span>02</span><strong>一起理解与核对</strong><small>结合已经说出的事实，看看是否还有例外或不同的理解角度。</small></article>
+      <article><span>03</span><strong>找到一个小行动</strong><small>形成更平衡的看法，再商量一件当天可以尝试的小事。</small></article>
+    </div>
+    <p class="cbt-disclaimer">本项目仅用于课堂角色扮演研究和系统测试，不提供正式心理治疗、医疗诊断或紧急救援服务。</p>
+  </section>
+
+  {% if not consented %}
+  <section class="consent-card" id="consent-card">
+    <span class="consent-icon">!</span>
+    <div>
+      <h2>开始前，请确认实验数据记录告知</h2>
+      <p>本次对话的输入、Agent 回复、运行状态、耗时和 CBT 分析轨迹将被保存，用于课程研究与系统测试。请不要输入真实姓名、电话或病历信息。</p>
+      <label class="check-row"><input id="consent-check" type="checkbox"> <span>我已阅读并同意记录本次测试数据</span></label>
+    </div>
+    <button id="consent-button" class="secondary-button" disabled>确认并开启实验</button>
+  </section>
+  {% endif %}
+
+  <section class="history-section" id="conversation-history" tabindex="-1">
+    <div class="section-heading">
+      <div><p class="eyebrow">SESSION ARCHIVE</p><h2>最近会话</h2></div>
+      <span>{{ conversations|length }} 个会话</span>
+    </div>
+    {% if conversations %}
+    <div class="history-list">
+      {% for item in conversations %}
+      <a class="history-row" href="{{ '/cbt-course/conversations/' ~ item.id if item.lesson_id else '/conversations/' ~ item.id }}">
+        <span class="history-type {{ item.mode }}">{{ "CBT" if item.mode == "cbt" else "日常" }}</span>
+        <span class="history-main"><strong>{{ ("第 " ~ item.lesson_id.split("-")[-1] ~ " 课") if item.lesson_id else (item.scenario_id or "自由对话") }}</strong><small>{{ item.started_at.strftime("%Y-%m-%d %H:%M") }}</small></span>
+        <span class="history-status">{{ item.status }}</span>
+        <span class="row-arrow">↗</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">还没有对话记录，选择上方一种模式开始实验。</div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

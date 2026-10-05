@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}实验数据后台 · 陪伴对话实验室{% endblock %}
+{% block page %}admin-list{% endblock %}
+{% block header_actions %}<span class="participant-pill">管理员</span>{% endblock %}
+{% block content %}
+<section class="admin-shell">
+  <div class="admin-heading"><div><p class="eyebrow">RESEARCH ARCHIVE</p><h1>实验会话数据</h1></div><span class="record-count">{{ conversations|length }} RECORDS</span></div>
+  <form id="bulk-export-form" method="get">
+  <div class="filter-bar">
+    <input id="admin-search" placeholder="搜索参与者或情境……" aria-label="搜索会话">
+    <select id="mode-filter" name="mode" aria-label="按模式筛选" required><option value="">选择模式</option><option value="cbt">CBT</option><option value="daily_chat">Daily Chat</option></select>
+    <select id="version-filter" name="agent_version" aria-label="按 Agent 版本筛选" required><option value="">选择 Agent 版本</option>{% for mode, version in agent_versions %}<option value="{{ version }}" data-mode="{{ mode }}">{{ "CBT" if mode == "cbt" else "Daily" }} · {{ version }}</option>{% endfor %}</select>
+    <select id="status-filter" aria-label="按状态筛选"><option value="">全部状态</option><option value="active">进行中</option><option value="completed">课程完成</option><option value="ended">已结束</option></select>
+    <input id="date-filter" type="date" aria-label="按开始日期筛选">
+  </div>
+  <div class="bulk-export-bar"><span>选择模式和版本；批量数据集包含已结束会话和已完成课程。</span><button type="submit" formaction="/admin/exports/bulk/ended.json">导出全部已结束会话 JSON</button><button type="submit" formaction="/admin/exports/bulk/ended-dialogues.json">导出对话 JSON</button></div>
+  </form>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>参与者</th><th>模式</th><th>Agent 版本</th><th>语境 / 课程</th><th>开始时间</th><th>状态</th><th></th></tr></thead>
+      <tbody id="conversation-table">
+      {% for item in conversations %}
+        <tr data-mode="{{ item.mode }}" data-version="{{ item.agent_version }}" data-status="{{ item.status }}" data-date="{{ item.started_at.strftime('%Y-%m-%d') }}" data-search="{{ item.participant.label }} {{ item.lesson_id or item.scenario_id or '' }} {{ item.agent_version }}">
+          <td><strong>{{ item.participant.label }}</strong><small>{{ item.id[:8] }}</small></td>
+          <td><span class="table-tag {{ item.mode }}">{{ "CBT" if item.mode == "cbt" else "Daily" }}</span></td>
+          <td><strong>{{ item.agent_version }}</strong></td>
+          <td>{{ item.lesson_id or item.scenario_id or "—" }}</td>
+          <td>{{ item.started_at.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td><span class="status-dot"></span>{{ item.status }}</td>
+          <td><a class="table-link" href="/admin/conversations/{{ item.id }}">查看 ↗</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

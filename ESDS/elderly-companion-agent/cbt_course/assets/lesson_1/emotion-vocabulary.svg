@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">常见情绪词</title>
+  <desc id="desc">帮助表达感受的情绪词示例。</desc>
+  <rect width="1200" height="440" rx="36" fill="#f8f0df"/>
+  <text x="72" y="82" fill="#1d4b3d" font-family="sans-serif" font-size="38" font-weight="700">情绪通常可以用一两个词说出来</text>
+  <text x="74" y="124" fill="#6a756f" font-family="sans-serif" font-size="21">下面只是一些例子，你也可以使用自己的词</text>
+  <g font-family="sans-serif" font-size="27" font-weight="700" text-anchor="middle">
+    <g transform="translate(72 168)">
+      <rect width="230" height="88" rx="44" fill="#dfeadd"/><text x="115" y="56" fill="#315846">平静</text>
+    </g>
+    <g transform="translate(340 168)">
+      <rect width="230" height="88" rx="44" fill="#f0d7b8"/><text x="115" y="56" fill="#784f25">担心</text>
+    </g>
+    <g transform="translate(608 168)">
+      <rect width="230" height="88" rx="44" fill="#e8d5d1"/><text x="115" y="56" fill="#784339">难过</text>
+    </g>
+    <g transform="translate(876 168)">
+      <rect width="230" height="88" rx="44" fill="#ead8bc"/><text x="115" y="56" fill="#754f20">生气</text>
+    </g>
+    <g transform="translate(206 292)">
+      <rect width="230" height="88" rx="44" fill="#e0e2ef"/><text x="115" y="56" fill="#4e5277">害怕</text>
+    </g>
+    <g transform="translate(474 292)">
+      <rect width="230" height="88" rx="44" fill="#dce9e3"/><text x="115" y="56" fill="#315b50">孤单</text>
+    </g>
+    <g transform="translate(742 292)">
+      <rect width="230" height="88" rx="44" fill="#f0e1a7"/><text x="115" y="56" fill="#6c5819">高兴</text>
+    </g>
+  </g>
+</svg>

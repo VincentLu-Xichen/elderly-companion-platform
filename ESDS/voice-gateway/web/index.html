@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ESDS Voice</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; background: #0c1017; color: #e8eef8; }
+    main { width: min(920px, calc(100% - 32px)); margin: 36px auto; }
+    h1 { margin-bottom: 8px; font-size: clamp(28px, 5vw, 48px); }
+    .sub { color: #94a3b8; margin: 0 0 28px; }
+    .controls, .metrics { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, button { border: 1px solid #334155; border-radius: 10px; padding: 11px 13px; background: #111827; color: inherit; }
+    input { flex: 1 1 260px; }
+    button { cursor: pointer; background: #2563eb; border-color: #2563eb; font-weight: 650; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .metrics { margin: 18px 0; color: #cbd5e1; }
+    .metrics span { padding: 7px 10px; border-radius: 999px; background: #172033; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .panel { min-height: 120px; padding: 16px; border: 1px solid #263244; border-radius: 14px; background: #111827; }
+    .label { color: #60a5fa; font-size: 13px; margin-bottom: 10px; }
+    #log { white-space: pre-wrap; color: #94a3b8; font-family: ui-monospace, monospace; font-size: 12px; max-height: 220px; overflow: auto; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ESDS Voice</h1>
+    <p class="sub" id="status">未连接 · 仅使用麦克风，不启用摄像头</p>
+    <div class="controls">
+      <input id="url" aria-label="WebSocket 地址" />
+      <input id="token" type="password" placeholder="设备 token（可选）" />
+      <button id="connect">开始语音</button>
+    </div>
+    <div class="metrics">
+      <span id="state">状态：idle</span>
+      <span id="emotion">情绪：—</span>
+      <span id="confidence">置信度：—</span>
+      <span id="latency">首音频：—</span>
+    </div>
+    <div class="grid">
+      <section class="panel"><div class="label">用户转写</div><div id="userText">…</div></section>
+      <section class="panel"><div class="label">助手回复</div><div id="assistantText">…</div></section>
+    </div>
+    <section class="panel" style="margin-top:14px"><div class="label">事件</div><div id="log"></div></section>
+  </main>
+  <script src="./runtime-config.js"></script>
+  <script type="module" src="./audio-client.js"></script>
+</body>
+</html>

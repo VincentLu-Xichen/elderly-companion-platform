@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esds-voice"
+version = "0.1.0"
+description = "Voice-only empathetic dialogue gateway: ASR + speech emotion + LLM + TTS"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26,<3",
+  "soxr>=1.0,<2",
+  "websockets>=15,<17",
+  "httpx>=0.28,<1",
+]
+
+[project.optional-dependencies]
+local-asr = [
+  "sherpa-onnx>=1.13,<2",
+]
+emotion2vec = [
+  "scipy>=1.11,<2",
+  "torch>=2.2,<3",
+  "torchaudio>=2.2,<3",
+  "funasr>=1.3.26,<2",
+  "transformers>=4.51,<5",
+  "huggingface-hub>=0.30,<1",
+]
+edge-tts = [
+  "edge-tts>=7,<8",
+]
+local = [
+  "sherpa-onnx>=1.13,<2",
+  "scipy>=1.11,<2",
+  "torch>=2.2,<3",
+  "torchaudio>=2.2,<3",
+  "funasr>=1.3.26,<2",
+  "transformers>=4.51,<5",
+  "huggingface-hub>=0.30,<1",
+]
+dev = []
+
+[project.scripts]
+esds-voice = "esds_voice.__main__:main"
+esds-pi-audio = "esds_voice.pi_audio:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

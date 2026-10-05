@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="认知行为练习课课程目录">
+  <title>CBT 课程 · 陪伴对话实验室</title>
+  <link rel="stylesheet" href="/static/styles.css?v=20260731-course">
+  <link rel="stylesheet" href="/static/cbt_course/course.css?v=20260731-2">
+  <script src="/static/cbt_course/course.js?v=20260731-2" defer></script>
+</head>
+<body data-course-page="catalog">
+  <header class="course-topbar">
+    <a class="course-brand" href="/app" aria-label="返回首页">
+      <span class="course-brand-mark">课</span>
+      <span><strong>认知行为练习课</strong><small>CONVERSATIONAL LEARNING</small></span>
+    </a>
+    <div class="course-top-actions">
+      <span>{{ participant.label }}</span>
+      <a href="/app">返回首页</a>
+    </div>
+  </header>
+
+  <main class="catalog-shell">
+    <section class="catalog-intro">
+      <div>
+        <p class="course-kicker">EIGHT-LESSON PATH</p>
+        <h1>在对话里，慢慢<br>看清想法与行动。</h1>
+      </div>
+      <div class="catalog-intro-copy">
+        <p>每一课都通过自然对话推进。进入课程后，你只需要像聊天一样输入文字或数字，不需要操作量表、选项或答题卡。</p>
+        <small>课程用于学习与研究，不代替心理治疗、医疗诊断或紧急救援。</small>
+      </div>
+    </section>
+
+    <section class="course-grid" aria-label="八次课程">
+      {% for course in courses %}
+      {% set active = active_by_lesson.get(course.id) %}
+      {% set latest = latest_by_lesson.get(course.id) %}
+      <article class="course-tile {% if not course.available %}is-locked{% endif %}">
+        <div class="course-tile-number">{{ "%02d"|format(course.number) }}</div>
+        <div class="course-tile-state">
+          {% if active %}学习中{% elif latest and latest.status == "completed" %}已完成{% elif course.available %}已开放{% else %}待上线{% endif %}
+        </div>
+        <h2>{{ course.title }}</h2>
+        <p>{{ course.summary }}</p>
+        <div class="course-tile-meta"><span>{{ course.practice }}</span><span>{{ course.duration }}</span></div>
+        {% if course.available and consented %}
+        <button class="course-entry" type="button" data-start-lesson="{{ course.id }}">
+          {{ "继续学习" if active else ("重新学习" if latest and latest.status == "completed" else "进入课程") }}
+          <span>→</span>
+        </button>
+        {% elif course.available %}
+        <a class="course-entry is-disabled" href="/app#consent-card">请先确认数据记录告知 <span>→</span></a>
+        {% else %}
+        <div class="course-entry is-disabled">内容准备中 <span>—</span></div>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </section>
+
+    {% if conversations %}
+    <section class="course-history">
+      <div class="course-section-heading">
+        <p class="course-kicker">LEARNING ARCHIVE</p>
+        <h2>学习记录</h2>
+      </div>
+      <div class="course-history-list">
+        {% for item in conversations %}
+        <a href="/cbt-course/conversations/{{ item.id }}">
+          <span>第 {{ item.lesson_id.split("-")[-1] }} 课</span>
+          <strong>{{ "继续学习" if item.status == "active" else "查看课程与记录日记" }}</strong>
+          <small>{{ item.started_at.strftime("%Y-%m-%d %H:%M") }} · {{ item.status }}</small>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </main>
+  <div id="course-toast" class="course-toast" role="status" aria-live="polite"></div>
+</body>
+</html>

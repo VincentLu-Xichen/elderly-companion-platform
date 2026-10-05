@@ -1,0 +1,16 @@
+__pycache__/
+.DS_Store
+*.pyc
+experiment_result.txt
+.env
+.env.*
+!.env.example
+.venv/
+roleplay_chat.db
+*.db
+*.sqlite3
+.vercel/
+backups/
+test-results/
+logs/
+docs/

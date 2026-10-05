@@ -1,0 +1,22 @@
+[Unit]
+Description=Elderly Companion Daily Chat Agent
+Documentation=file:%h/ESDS/elderly-companion-agent/README.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ESDS/elderly-companion-agent
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=%h/.config/elderly-agent/env
+ExecStart=%h/ESDS/elderly-companion-agent/.venv/bin/uvicorn webapp.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

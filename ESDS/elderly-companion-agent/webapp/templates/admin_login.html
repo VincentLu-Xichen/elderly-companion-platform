@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}管理员登录 · 陪伴对话实验室{% endblock %}
+{% block page %}admin-login{% endblock %}
+{% block content %}
+<section class="admin-login-shell">
+  <form id="admin-login-form" class="login-card">
+    <p class="eyebrow">RESEARCH ADMIN</p>
+    <h1>实验数据后台</h1>
+    <p>请输入管理员密码以查看、筛选和导出对话数据。</p>
+    <label for="admin-password">管理员密码</label>
+    <input id="admin-password" type="password" autocomplete="current-password" required>
+    <button class="primary-button full" type="submit">登录后台</button>
+    <p class="form-error" id="form-error" role="alert"></p>
+  </form>
+</section>
+{% endblock %}

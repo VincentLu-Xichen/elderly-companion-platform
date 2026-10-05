@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}会话详情 · 实验数据后台{% endblock %}
+{% block page %}admin-detail{% endblock %}
+{% block header_actions %}<a class="text-link" href="/admin">返回数据列表</a>{% endblock %}
+{% block content %}
+<section class="admin-detail-shell">
+  <div class="detail-heading">
+    <div><p class="eyebrow">SESSION {{ conversation.id[:8] }}</p><h1>{{ conversation.participant_label }} · {{ "CBT" if conversation.mode == "cbt" else "Daily Chat" }}</h1></div>
+    <div class="export-actions"><a href="/admin/exports/{{ conversation.id }}.json">导出对话 JSON</a><a href="/admin/exports/{{ conversation.id }}/full.json">导出完整 JSON</a><a href="/admin/exports/{{ conversation.id }}.csv">导出 CSV</a><button id="admin-delete" data-conversation-id="{{ conversation.id }}">删除会话</button></div>
+  </div>
+  <section class="admin-scenario"><span>Agent 版本 {{ conversation.agent_version }}</span><p>Prompt SHA-256：{{ conversation.agent_prompt_hash or "历史数据无指纹" }}</p>{% if conversation.lesson_id %}<small>课程 {{ conversation.lesson_id }} · 版本 {{ conversation.lesson_version }}</small>{% endif %}</section>
+  {% if conversation.scenario %}
+  <section class="admin-scenario"><span>{{ conversation.scenario.title }}</span><p>{{ conversation.scenario.background }} {{ conversation.scenario.recent_event }}</p><small>版本 {{ conversation.scenario_version }}</small></section>
+  {% endif %}
+  <div class="detail-grid">
+    <section class="transcript-panel">
+      <h2>完整对话</h2>
+      {% for message in conversation.messages %}
+      <div class="transcript-line {{ message.role }}"><span>#{{ message.sequence }} · {{ "老人" if message.role == "elderly" else "Agent" }}</span><p>{{ message.content }}</p></div>
+      {% else %}<p class="empty-state">本次会话还没有消息。</p>{% endfor %}
+    </section>
+    <section class="trace-panel">
+      <h2>运行审计</h2>
+      {% for event in conversation.turn_events %}
+      <details class="trace-event" {% if loop.first %}open{% endif %}>
+        <summary><span class="table-tag {{ event.status }}">{{ event.status }}</span><strong>{{ event.latency_ms or 0 }} ms</strong></summary>
+        <dl><dt>Agent 版本</dt><dd>{{ event.agent_version or "历史数据无版本" }}</dd><dt>Prompt SHA-256</dt><dd>{{ event.agent_prompt_hash or "—" }}</dd><dt>模型</dt><dd>{{ event.model or "未调用" }}</dd><dt>部署</dt><dd>{{ event.deployment or "—" }}</dd><dt>API 版本</dt><dd>{{ event.api_version or "—" }}</dd><dt>安全事件</dt><dd>{{ event.safety_event or "—" }}</dd><dt>错误</dt><dd>{{ event.error or "—" }}</dd></dl>
+        {% if event.trace %}<pre>{{ event.trace|tojson(indent=2) }}</pre>{% endif %}
+      </details>
+      {% else %}<p class="empty-state">暂无运行事件。</p>{% endfor %}
+    </section>
+  </div>
+</section>
+{% endblock %}

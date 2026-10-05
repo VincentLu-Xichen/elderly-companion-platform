@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">认知行为三角练习案例</title>
+  <desc id="desc">一段关于与人打招呼时紧张的练习案例。</desc>
+  <rect width="1200" height="560" rx="36" fill="#edf3ed"/>
+  <text x="72" y="82" fill="#1d4b3d" font-family="sans-serif" font-size="38" font-weight="700">练习案例</text>
+  <text x="74" y="124" fill="#6a756f" font-family="sans-serif" font-size="21">读一读这段话，试着找出情境、想法、情绪和行为</text>
+  <rect x="72" y="164" width="1056" height="320" rx="28" fill="#fff"/>
+  <g fill="#2d433b" font-family="sans-serif" font-size="29">
+    <text x="120" y="228">当别人和我说话或者打招呼时，一旦没有想到合适的话，</text>
+    <text x="120" y="278">我就会感到紧张，一紧张我就会拼命想和人说话。</text>
+    <text x="120" y="348">我想：“要是自己不回应对方，对方就会觉得我不礼貌，</text>
+    <text x="120" y="398">对和他聊天没有兴趣，这样会影响我和他的关系。”</text>
+  </g>
+  <text x="120" y="452" fill="#9b6b22" font-family="sans-serif" font-size="22" font-weight="700">不需要点选图片，直接在下方用文字回答即可。</text>
+</svg>

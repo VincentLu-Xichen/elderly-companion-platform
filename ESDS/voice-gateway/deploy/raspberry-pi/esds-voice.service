@@ -1,0 +1,23 @@
+[Unit]
+Description=ESDS voice gateway
+Documentation=file:%h/ESDS/voice-gateway/docs/raspberry_pi.md
+Wants=network-online.target elderly-agent.service
+After=network-online.target elderly-agent.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ESDS/voice-gateway
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=-%h/.config/esds-voice/env
+ExecCondition=%h/ESDS/voice-gateway/.venv/bin/python %h/ESDS/voice-gateway/scripts/configure_pi.py --check
+ExecStart=%h/ESDS/voice-gateway/.venv/bin/python %h/ESDS/voice-gateway/scripts/run_local.py --no-open
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

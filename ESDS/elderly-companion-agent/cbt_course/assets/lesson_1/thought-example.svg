@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">区分情境与想法的例子</title>
+  <desc id="desc">把发生的事实和脑中冒出的判断分开。</desc>
+  <rect width="1200" height="430" rx="36" fill="#eef3ec"/>
+  <text x="70" y="76" fill="#1d4b3d" font-family="sans-serif" font-size="38" font-weight="700">发生了什么，和我怎么想，并不是一回事</text>
+  <g font-family="sans-serif">
+    <rect x="70" y="126" width="490" height="230" rx="26" fill="#fff"/>
+    <text x="110" y="177" fill="#9b6b22" font-size="21" font-weight="700">情境 · 可以被摄像机拍到</text>
+    <text x="110" y="238" fill="#273f37" font-size="30" font-weight="700">女儿两天没有回电话</text>
+    <text x="110" y="292" fill="#6e7f78" font-size="22">具体、客观、发生在某时某地</text>
+    <rect x="640" y="126" width="490" height="230" rx="26" fill="#1f5544"/>
+    <text x="680" y="177" fill="#f1ce8b" font-size="21" font-weight="700">想法 · 脑中冒出的解释</text>
+    <text x="680" y="238" fill="#fff" font-size="30" font-weight="700">“她是不是不在乎我了？”</text>
+    <text x="680" y="292" fill="#d7e5df" font-size="22">这是对事情的判断，不一定是事实</text>
+  </g>
+  <path d="M580 240h40" stroke="#b7852f" stroke-width="8" stroke-linecap="round"/>
+  <path d="m609 222 18 18-18 18" fill="none" stroke="#b7852f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
