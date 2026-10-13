@@ -163,6 +163,165 @@ class LocalCompanionProviderTests(unittest.IsolatedAsyncioTestCase):
         )
         await provider.close()
 
+    async def test_first_unpunctuated_segment_is_sent_at_character_limit(self) -> None:
+        first_text = "这是一句没有标点的回复内容所以应该尽早播出"
+
+        class PausedChat(FakeChatClient):
+            def __init__(self):
+                super().__init__()
+                self.resume = asyncio.Event()
+
+            async def stream_reply(self, messages):
+                self.messages = messages
+                yield first_text
+                await self.resume.wait()
+                yield "之后继续。"
+
+        chat = PausedChat()
+        tts = FakeSynthesizer()
+        provider = LocalCompanionProvider(
+            transcriber=FakeTranscriber(),
+            chat_client=chat,
+            synthesizer=tts,
+            instructions="base",
+        )
+        await provider.connect()
+        await provider.send_audio(b"\x00\x00" * 480)
+        await provider.finish_audio_turn()
+        events = provider.events()
+        await anext(events)
+        await provider.create_response("base")
+        try:
+            while True:
+                event = await asyncio.wait_for(anext(events), timeout=1)
+                if event.type == "audio.delta":
+                    break
+
+            self.assertEqual(tts.sentences[0][0], first_text[:16])
+            self.assertFalse(chat.resume.is_set())
+            chat.resume.set()
+
+            final_text = ""
+            while True:
+                event = await asyncio.wait_for(anext(events), timeout=1)
+                if event.type == "assistant.transcript.done":
+                    final_text = event.text
+                if event.type == "response.done":
+                    break
+            self.assertEqual(final_text, first_text + "之后继续。")
+            self.assertEqual(
+                [text for text, _ in tts.sentences],
+                [first_text[:16], first_text[16:] + "之后继续。"],
+            )
+        finally:
+            chat.resume.set()
+            await provider.close()
+
+    async def test_first_unpunctuated_segment_is_sent_after_wait_limit(self) -> None:
+        first_text = "今天想和您说几句话"
+
+        class PausedChat(FakeChatClient):
+            def __init__(self):
+                super().__init__()
+                self.waiting_for_resume = asyncio.Event()
+                self.resume = asyncio.Event()
+                self.resumed = False
+
+            async def stream_reply(self, messages):
+                self.messages = messages
+                yield first_text
+                self.waiting_for_resume.set()
+                await self.resume.wait()
+                self.resumed = True
+                yield "后面还有内容。"
+
+        chat = PausedChat()
+        tts = FakeSynthesizer()
+        provider = LocalCompanionProvider(
+            transcriber=FakeTranscriber(),
+            chat_client=chat,
+            synthesizer=tts,
+            instructions="base",
+        )
+        await provider.connect()
+        await provider.send_audio(b"\x00\x00" * 480)
+        await provider.finish_audio_turn()
+        events = provider.events()
+        await anext(events)
+        await provider.create_response("base")
+        try:
+            await asyncio.wait_for(chat.waiting_for_resume.wait(), timeout=1)
+            while True:
+                event = await asyncio.wait_for(anext(events), timeout=1)
+                if event.type == "audio.delta":
+                    break
+
+            self.assertEqual(tts.sentences[0][0], first_text)
+            self.assertFalse(chat.resumed)
+            chat.resume.set()
+
+            final_text = ""
+            while True:
+                event = await asyncio.wait_for(anext(events), timeout=1)
+                if event.type == "assistant.transcript.done":
+                    final_text = event.text
+                if event.type == "response.done":
+                    break
+            self.assertEqual(final_text, first_text + "后面还有内容。")
+            self.assertEqual(
+                [text for text, _ in tts.sentences],
+                [first_text, "后面还有内容。"],
+            )
+        finally:
+            chat.resume.set()
+            await provider.close()
+
+    async def test_cancel_clears_pending_first_segment_wait(self) -> None:
+        class PausedChat(FakeChatClient):
+            def __init__(self):
+                super().__init__()
+                self.waiting_for_resume = asyncio.Event()
+                self.resume = asyncio.Event()
+                self.closed = asyncio.Event()
+
+            async def stream_reply(self, messages):
+                try:
+                    yield "这段文字还不到触发字数"
+                    self.waiting_for_resume.set()
+                    await self.resume.wait()
+                    yield "后续内容。"
+                finally:
+                    self.closed.set()
+
+        chat = PausedChat()
+        tts = FakeSynthesizer()
+        provider = LocalCompanionProvider(
+            transcriber=FakeTranscriber(),
+            chat_client=chat,
+            synthesizer=tts,
+            instructions="base",
+        )
+        await provider.connect()
+        await provider.send_audio(b"\x00\x00" * 480)
+        await provider.finish_audio_turn()
+        events = provider.events()
+        await anext(events)
+        await provider.create_response("base")
+        try:
+            await asyncio.wait_for(chat.waiting_for_resume.wait(), timeout=1)
+            await provider.cancel(item_id=None, played_ms=0)
+            await asyncio.wait_for(chat.closed.wait(), timeout=1)
+            self.assertEqual(tts.sentences, [])
+            self.assertFalse(
+                any(
+                    task.get_name() == "local-text-next-delta"
+                    for task in asyncio.all_tasks()
+                )
+            )
+        finally:
+            chat.resume.set()
+            await provider.close()
+
     async def test_empty_create_response_does_not_cancel_in_flight_reply(self) -> None:
         class SlowChat(FakeChatClient):
             async def stream_reply(self, messages):
@@ -364,6 +523,23 @@ class LocalCompanionHelpersTests(unittest.TestCase):
         segments, remaining = _extract_speakable_segments("我明白你的意思。我们慢慢说")
         self.assertEqual(segments, ["我明白你的意思。"])
         self.assertEqual(remaining, "我们慢慢说")
+
+    def test_first_segment_uses_16_character_fallback(self) -> None:
+        text = "这是一句没有标点的回复内容所以应该尽早播出"
+        segments, remaining = _extract_speakable_segments(
+            text, first_segment=True
+        )
+        self.assertEqual(segments, [text[:16]])
+        self.assertEqual(remaining, text[16:])
+
+    def test_later_segments_keep_existing_32_character_fallback(self) -> None:
+        segments, remaining = _extract_speakable_segments("甲" * 31)
+        self.assertEqual(segments, [])
+        self.assertEqual(remaining, "甲" * 31)
+
+        segments, remaining = _extract_speakable_segments("甲" * 32)
+        self.assertEqual(segments, ["甲" * 12])
+        self.assertEqual(remaining, "甲" * 20)
 
     def test_emotion_instructions_adjust_voice_style(self) -> None:
         self.assertEqual(_voice_style("语速稍慢、句子短一些"), ("-8%", "-2Hz"))

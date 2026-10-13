@@ -512,24 +512,83 @@ class LocalCompanionProvider:
                     with_emotion(messages, emotion) if with_emotion is not None
                     else self.chat_client.stream_reply(messages)
                 )
-            async for token in tokens:
-                spoken_token = sanitize_spoken_text(token)
-                if not spoken_token:
-                    continue
-                if timing["model_first"] is None:
-                    timing["model_first"] = time.perf_counter()
-                full_text.append(spoken_token)
-                pending += spoken_token
-                await self._events.put(
-                    ProviderEvent(
-                        "assistant.transcript.delta",
-                        text=spoken_token,
-                        item_id=item_id,
-                    )
+            iterator = tokens.__aiter__()
+            pending_token: asyncio.Task[str] | None = None
+            first_segment_deadline: float | None = None
+            first_segment_sent = False
+            try:
+                pending_token = asyncio.create_task(
+                    anext(iterator), name="local-text-next-delta"
                 )
-                segments, pending = _extract_speakable_segments(pending)
-                for segment in segments:
-                    await sentence_queue.put(segment)
+                while pending_token is not None:
+                    if first_segment_sent or first_segment_deadline is None:
+                        await asyncio.wait((pending_token,))
+                    else:
+                        wait_seconds = max(
+                            0.0,
+                            first_segment_deadline - asyncio.get_running_loop().time(),
+                        )
+                        completed, _ = await asyncio.wait(
+                            (pending_token,), timeout=wait_seconds
+                        )
+                        if not completed:
+                            if pending.strip():
+                                await sentence_queue.put(pending.strip())
+                                pending = ""
+                                first_segment_sent = True
+                            first_segment_deadline = None
+                            continue
+
+                    try:
+                        token = pending_token.result()
+                    except StopAsyncIteration:
+                        pending_token = None
+                        break
+                    pending_token = None
+
+                    spoken_token = sanitize_spoken_text(token)
+                    if not spoken_token:
+                        pending_token = asyncio.create_task(
+                            anext(iterator), name="local-text-next-delta"
+                        )
+                        continue
+                    if timing["model_first"] is None:
+                        timing["model_first"] = time.perf_counter()
+                    full_text.append(spoken_token)
+                    pending += spoken_token
+                    await self._events.put(
+                        ProviderEvent(
+                            "assistant.transcript.delta",
+                            text=spoken_token,
+                            item_id=item_id,
+                        )
+                    )
+                    segments, pending = _extract_speakable_segments(
+                        pending,
+                        first_segment=not first_segment_sent,
+                    )
+                    if segments:
+                        for segment in segments:
+                            await sentence_queue.put(segment)
+                        first_segment_sent = True
+                        first_segment_deadline = None
+                    elif not first_segment_sent and pending.strip():
+                        if first_segment_deadline is None:
+                            first_segment_deadline = (
+                                asyncio.get_running_loop().time()
+                                + _FIRST_SEGMENT_MAX_WAIT_SECONDS
+                            )
+                    pending_token = asyncio.create_task(
+                        anext(iterator), name="local-text-next-delta"
+                    )
+            finally:
+                if pending_token is not None:
+                    if not pending_token.done():
+                        pending_token.cancel()
+                    await asyncio.gather(pending_token, return_exceptions=True)
+                close_iterator = getattr(iterator, "aclose", None)
+                if close_iterator is not None:
+                    await close_iterator()
             if pending.strip():
                 await sentence_queue.put(pending.strip())
             await sentence_queue.put(None)
@@ -642,13 +701,17 @@ class LocalCompanionProvider:
 
 
 _BOUNDARY = re.compile(r"^(.+?[，。！？；,.!?;：:\n])(?=.+|$)", re.DOTALL)
+_FIRST_SEGMENT_MAX_CHARS = 16
+_FIRST_SEGMENT_MAX_WAIT_SECONDS = 0.3
 
 
 async def _single_text_stream(text: str) -> AsyncIterator[str]:
     yield text
 
 
-def _extract_speakable_segments(buffer: str) -> tuple[list[str], str]:
+def _extract_speakable_segments(
+    buffer: str, *, first_segment: bool = False
+) -> tuple[list[str], str]:
     segments: list[str] = []
     remaining = buffer
     while True:
@@ -664,10 +727,15 @@ def _extract_speakable_segments(buffer: str) -> tuple[list[str], str]:
         if segment:
             segments.append(segment)
     # Bound first-audio latency even if the model avoids punctuation.
-    if not segments and len(remaining) >= 32:
-        split_at = max(12, remaining.rfind(" ", 12, 32))
-        if split_at <= 0:
-            split_at = 28
+    max_chars = _FIRST_SEGMENT_MAX_CHARS if first_segment else 32
+    if not segments and len(remaining) >= max_chars:
+        if first_segment:
+            space_at = remaining.rfind(" ", 8, max_chars)
+            split_at = space_at if space_at >= 8 else max_chars
+        else:
+            split_at = max(12, remaining.rfind(" ", 12, 32))
+            if split_at <= 0:
+                split_at = 28
         segments.append(remaining[:split_at].strip())
         remaining = remaining[split_at:]
     return segments, remaining
