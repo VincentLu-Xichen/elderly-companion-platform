@@ -28,3 +28,6 @@ logs/
 .DS_Store
 dist/
 build/
+
+# Local product planning and idea notes
+/docs/

@@ -1,5 +1,7 @@
 # ESDS × Elderly Companion Agent
 
+当前产品现状、想法和开发顺序统一见[产品](../docs/PRODUCT.md)、[想法](../docs/IDEAS.md)、[当前目标](../docs/ROADMAP.md)与[决策](../docs/DECISIONS.md)。本文件继续保留原语音验收范围；实际能力与历史范围的差异见产品文档及 TD-03，不据旧说明判断当前功能缺失。
+
 本目录包含两个独立工作区：
 
 - `voice-gateway/`：树莓派麦克风、VAD、百炼 ASR、情绪表达、百炼 TTS 与扬声器。

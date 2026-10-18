@@ -1,5 +1,7 @@
 # 老人陪伴 Agent：Daily Chat 与对话式 CBT 课程
 
+工作区产品管理：[产品与现状](../../docs/PRODUCT.md) · [想法收集](../../docs/IDEAS.md) · [当前目标与债务](../../docs/ROADMAP.md) · [设计决策](../../docs/DECISIONS.md)。新想法先记录，明确要求实施后再开发；下文和 `specs/` 保留模块技术与历史实现说明。
+
 树莓派本轮情绪上下文的接口、兼容性与验证说明：[voice-emotion.md](docs/voice-emotion.md)。
 
 这是一个用于课堂研究与角色扮演实验的 FastAPI 对话平台，包含两个相互独立的产品入口：
@@ -11,12 +13,27 @@
 
 ## 当前状态
 
+最新：[6.8 同例停问与渐进显示](specs/013-stop-probing/implementation.md)。抱怨追问方式时保留当前事件和原记录，缺项留空、礼貌回顾并待本人核对；不因此写入个人询问禁令或换案例。新版隐藏常驻逐项按钮，程序回复保存后渐进显示，真实 LLM 增量路径保留。176 项离线回归、JS 及有限模型检查通过，用户体验待验收。隔离新版体验 `http://127.0.0.1:8011/`，邀请码 `course-preview`；8010旧进程和数据保留。以下6.7为此前增量。
+
+最新：[6.7 衔接与自然语言推进](specs/012-course-navigation/implementation.md)。第一课目标、课后安排、总结支持一次 LLM 意图判断，明确两项选择可进入总结，含糊“完成了”先澄清；程序仍校验来源、顺序和确认边界。发送时立即清空输入，失败保留同键重试，新草稿不被按钮或重试清除。虚构练习用辨认/跳过文案。170 项离线检查和有限真实模型验证完成，用户体验待验收。隔离新版体验为 `http://127.0.0.1:8010/`，邀请码 `course-preview`，临时数据不作正式留存。以下 6.6 为此前增量。
+
+最新切片：[个人询问边界实现报告](specs/011-personal-boundary/implementation.md)。第 1 课升级为 `6.6-personal-boundary`，旧会话只读；整体拒绝后停止个人案例，自然确认一次后续边界，再用独立虚构案例继续。确认边界按类别检索，后课沿用；本次拒绝不推断长期偏好。共同练习保留模型回复，页面、成果和课末总结区分虚构与个人来源，独立检验题目不变。
+
+已有数据库须运行 `.venv\Scripts\alembic.exe upgrade head`，自动建表不能替代已有表增列。本次 162 项离线回归、有限真实 DeepSeek 与 Edge 两条第 1 课完成路径已验证；用户体验待验收。最终代码隔离体验：`http://127.0.0.1:8008/`，邀请码 `course-preview`；服务关闭后临时数据清除。以下 010 为历史增量，不假定旧进程已加载新版。
+
+当前新增[自然反馈事件反思与独立记忆](specs/010-event-reflection-memory/spec.md)：八课均支持候选反馈触发一次专用 LLM 判断，确认针对 Agent 时直接回应并保存加密记忆，不要求选择交流方式。第 1 课 6.5、第 2 课 5.1、第 3 课 2.1、第 4—8 课 1.1；旧版只读。局部反馈仅本课，明确跨课偏好才供后课参考；每轮检索不调用 LLM。课末仍自动异步 LLM 复盘，并纳入近期本课互动反思；新的课末协议待讨论。独立表使用现有数据库，部署前执行 `.venv\Scripts\alembic.exe upgrade head`。已有本机启动逻辑会创建缺少的表，但不能替代部署迁移。实现和验证边界见[报告](specs/010-event-reflection-memory/implementation.md)，不假定旧体验服务已加载新代码。
+
 | 模块 | 状态 | 说明 |
 | --- | --- | --- |
 | Daily Chat | 可用 | 使用最近 12 条对话生成简短陪聊回复。 |
-| CBT 第 1 课 | 可用（freeform 实验） | 由 LLM 根据本课完整对话历史自由引导，服务端处理持久化和完成标记。 |
-| CBT 第 2 课 | 可用（freeform 实验） | 单次 LLM 调用根据完整本课历史自然带领三栏记录，服务端处理安全拦截、持久化和完成标记。 |
-| CBT 第 3—8 课 | 待上线 | 课程目录已展示，后端流程尚未实现。 |
+| CBT 第 1 课 | 可用（结构化教学试用） | 九阶段、四题检验与可选补练、学习结果和课后反思；支持真实 LLM 与流式回复。 |
+| CBT 第 2 课 | 可用（结构化教学试用） | 三栏记录，可显式承接第 1 课已确认成果。 |
+| CBT 第 3 课 | 可用（结构化教学试用） | 核对推断依据与思维习惯；本人可以拒绝分类或保留不确定。 |
+| CBT 第 4 课 | 可用（结构化教学试用） | 检查做法的帮助与代价，考虑尊重边界的替代回应。 |
+| CBT 第 5 课 | 可用（结构化教学试用） | 本人选择行为激活/行为暴露路径，整理小步计划。 |
+| CBT 第 6 课 | 可用（结构化教学试用） | 检查支持与不同信息，保留本人更平衡的新说法。 |
+| CBT 第 7 课 | 可用（结构化教学试用） | 本人选择睡眠/放松路径，整理舒适且可调整的小步骤。 |
+| CBT 第 8 课 | 可用（结构化教学试用） | 可授权回顾多个前课成果，形成再遇困难时的应对与支持计划。 |
 | 历史 CBT 角色会话 | 只读 | 仅支持查看、导出和删除，不能继续发送消息。 |
 | 管理员后台 | 可用 | 支持筛选、查看、导出和删除实验记录。 |
 
@@ -28,7 +45,7 @@
 2. 确认实验数据记录告知。
 3. 选择 Daily Chat 或 CBT 课程。
 4. Daily Chat 会话可结束、再次查看或删除。
-5. CBT 课程自动保存进度；当 freeform 模型标记本课完成后，记录转为只读。
+5. CBT 课程自动保存进度；本人确认记录、选择课后安排并显式完成后，记录转为只读。
 
 学生端入口：
 
@@ -100,38 +117,60 @@ CBT_COURSE_MODEL=qwen-plus
 
 ### 对话式 CBT 课程
 
-当前分支的 FastAPI 默认加载 `cbt_course_llm_freeform`。第 1、2 课分别使用自己的 Prompt，由 LLM 根据完整的本课对话历史自由引导：
+FastAPI 默认加载 `cbt_course_llm_freeform`，八课共享 `course-guided-v3` 工作流。第 1 课为 `6.4-learning-check`，第 2 课为 `5.0-eight-lessons`，第 3 课为 `2.0-eight-lessons`，第 4—8 课为 `1.0-eight-lessons`。第 1 课已接入[教学练习与检验设计](specs/005-course-learning-design/spec.md)，见[实现对照与前端体验步骤](specs/005-course-learning-design/implementation-lesson-1.md)及[阶段重点与收束修订](specs/008-lesson1-stage-focus/spec.md)；第 2—8 课仍按 [004 八课工作流](specs/004-eight-lessons/spec.md)。[代码阅读和前后对照](specs/004-eight-lessons/code-walkthrough.md)与[后续专项理解测试](specs/004-eight-lessons/understanding-tests.md)分别记录原基线与待验证问题。
 
 ```text
 学习者本轮输入
     -> 服务端保存用户消息和 pending 审计事件
-    -> FreeformCourseAgent 接收本课完整对话历史
-    -> LLM 自由回复并选择附件或课程完成标记
-    -> 服务端移除控制标记，保存回复、加密状态和审计结果
+    -> FreeformCourseAgent 接收本课最近 24 条消息、当前阶段与必要记录
+    -> 一次模型调用返回 JSON 回复草稿、原话摘录、反馈信号和阶段建议
+    -> 服务端校验来源和合法阶段，按会话冻结的策略评估是否反思
+    -> 若触发：Reflector 形成短建议，程序校验后由 Actor 生成最终回复
+    -> 保存加密状态、最终回复与各次调用审计
+    -> 第 1 课在确认记录后进行四题检验、可选补练与目标确认
+    -> 本人选择课后安排，再显式完成
+    -> 单独生成一次课后教学复盘；失败可重试
 ```
 
 职责边界：
 
-- `FreeformCourseAgent` 负责回应、追问、课程推进和完成时机。
-- `FreeformCourseRuntime` 只解析附件白名单和课程完成标记。
-- 学习者可以用“三分”或“我觉得大概三分”等自然语言回答量表，服务端不强制转为阿拉伯数字。
-- 课程模型接收本课完整对话历史，但不接收角色语境卡。
+- `FreeformCourseAgent` 负责自然解释与反馈；模型不能确认记录、完成课程或授予跨课权限。
+- `FreeformCourseRuntime` 管理阶段和本人操作，第 1 课九阶段、其余六阶段；摘录必须来自本轮学习者消息，保留消息 ID 供追溯。
+- 近况评分可跳过，课后练习可拒绝。支持暂停与恢复，安全暂停不会被普通恢复绕过。
+- 第 2—7 课按配置选择相关前课摘要，第 8 课可回顾第 1—7 课每课最新的紧凑成果。仅同一参与者当前版本已完成且本人确认的成果；每次使用复核各来源。授权与实际沿用分开，采用只复制本课需要且语义相同的情境字段，不把计划变成已执行行为；不读取前课原文或角色语境卡。
+- 第 5、7 课须本人显式选择路径；重选会撤回本课旧路径记录、确认和安排，从新路径示例开始。第 8 课没有前课或拒绝回顾也可独立完成。
+- 学习记录与反思复用现有加密状态列，不改变数据库表结构。历史版本保留为只读。
 - 原有确定性 `cbt_course` 保留在仓库中，但当前 FastAPI 不加载它的路由。
 
-第 1 课依次完成：
+第 1 课在原六阶段的本人核对之后增加新案例四题检验、回看与可选两题补练、本人练习目标。首次回答结束后统一反馈，提示与补练分开保留；目标可确认或跳过。其余七课仍使用近况、示例、个人练习、核对、课后安排、回顾六阶段。界面进度不代表掌握程度，实际运用仍为 `application_status=not_measured`；八课均在模型前处理本地高风险信号。
 
-1. 上周心境评分。
-2. 选择一件具体困扰。
-3. 梳理情境、想法、情绪和行为。
-4. 记录想法相信程度和情绪强度。
-5. 在回复正文中生成纯文本四要素回顾。
-6. 完成四道概念练习。
-7. 设置课程目标。
-8. 布置四要素日记作业并结束本课，会话随后转为只读。
+普通教学未触发时一次调用，触发课内反思时共三次，本人按钮操作不调用模型。教学输出上限第 2 课 900、其余 1200 tokens，Reflector 600、Actor 350，每次超时 20 秒。`CBT_REFLECTION_POLICY` 支持 `none`、`per_turn`、`per_task_step`、`event_driven`；部署默认 none 对照，隔离体验默认事件规则。策略在新会话冻结，理由进入审计；不以时间、情绪或长度直接衡量 importance。真实理解、触发频率与反思收益留待专项实验。
 
-课程不会生成四栏概念图附件；用户案例会直接写入回复正文。
+第 1 课检验回答由独立判读调用返回 verdict/reason/source_message_id（上限 450 tokens）；原始回答由程序保存，判读失败不推进。概念提示、跳过和目标确认为零调用；检验不叠加课内 Reflector/Actor，避免提前反馈。完成本课后独立 Reflexion 增加结构化学习结果、本人记录及目标输入，输出带来源的情境假设、其他解释、下一步和核对办法（上限 1200 tokens，其余课 600）。具有独立 `TurnEvent`，失败可重试，默认不自动应用于后课，不修改本人事实。`POST /api/cbt-course/conversations/{id}/reflection` 可重试复盘；重要操作提交最新 `expected_revision`，失败重试使用原幂等键与原输入。
 
-第 2 课依次完成近况签到、第一课练习回顾、概念复习、下雨取消公园之约的引导示例、个人三栏记录、回顾和课后练习。每轮最多调用模型一次，回复上限为 600 tokens；本地高风险词会在模型调用前暂停课程。
+无需真实密钥的隔离体验（Windows PowerShell，项目目录中执行）：
+
+```powershell
+.venv\Scripts\python.exe scripts\run_course_preview.py
+```
+
+访问 `http://127.0.0.1:8000/`，测试邀请码 `course-preview`。这是明确标注的离线规则演示，展示真实状态、确认、跨课授权和复盘流程，不代表真实模型理解能力；可用“填入一条体验示例”体验。数据库放在独立临时目录，关闭服务后清除，真实配置不被改写。正常部署继续使用原有百炼/Azure 配置。
+
+在独立临时数据库执行全部离线回归：`.venv\Scripts\python.exe scripts\run_regression.py`。
+
+真实 DeepSeek 体验：在本机 `.env` 设置 `CBT_COURSE_PROVIDER=deepseek`、`CBT_COURSE_MODEL=deepseek-flash`、`DEEPSEEK_API_KEY`，再执行：
+
+```powershell
+.venv\Scripts\python.exe -B scripts\run_course_preview.py --port 8001 --provider deepseek --policy none
+```
+
+访问 `http://localhost:8001/`，邀请码仍为 `course-preview`。使用隔离临时数据库，密钥仅在服务端读取；页面标明 DeepSeek，真实模式不提供检验示例答案。普通模型回复通过新 `POST .../messages/stream` SSE 接口分段显示，原 JSON 接口保留；完整结构与来源校验后才提交学习记录。生成中内容可能由服务端最终回复替换，断流时同键重试恢复已保存结果，不自动换成规则模拟。检验判读与反思过程不展示为流式教学内容。详见[实现对照与验证](specs/006-course-streaming/implementation.md)。
+
+第 1 课 6.2 将示范与引导案例分开，见[007 前后对照](specs/007-lesson1-guided-example/spec.md)。当前 6.3 增加九阶段重点、个人练习有限澄清、字段暂留和真实缺失范围，见[008](specs/008-lesson1-stage-focus/spec.md)。新版隔离体验使用 `--port 8003`（访问 `http://localhost:8003/`），既有 8001、8002 进程和用户数据保留。个人练习由程序展示有边界的提问，模型草稿不流出；其他支持流式的环节保持原机制。来源校验失败问题仍单独待办。
+
+前端流式协议验证：`node scripts/test_course_stream_ui.cjs`。真实联通检查：`.venv\Scripts\python.exe -B scripts\check_deepseek_course.py`（会发起两次计费模型请求，仅用虚构输入）。
+
+逐轮查看八课状态与调用：`.venv\Scripts\python.exe scripts\trace_course_workflow.py --policy event_driven`。输出 `test-results/course-workflow-event_driven.json`；可替换反思策略，或加 `--activity-path exposure --wellbeing-path relaxation` 检查另两条路径。固定虚构案例用于流程与审计验证，不是理解或策略效果实验。
 
 ### 历史 CBT 兼容
 
@@ -159,9 +198,13 @@ cbt_course/
   assets/                   课程教学图片
 
 cbt_course_llm_freeform/
-  runtime.py                自由课程运行时与控制标记解析
-  agent.py                  基于本课完整历史生成自由回复
-  prompt.py                 第 1 课蓝图与 System Prompt
+  design.py                 八课/分支材料配置、动态字段与任务标识
+  schemas.py                模型与 API 的结构化契约
+  runtime.py                候选状态校验、本人操作与完成门禁
+  feedback.py               可配置触发与反思建议适用性
+  agent.py / prompt.py      教学、Reflector、Actor 的独立调用和 Prompt
+  memory.py                 成果摘要、授权、采用与来源复核
+  reflection.py             独立课后教学复盘
   services.py               课程持久化、幂等和审计
   router.py                 当前 FastAPI 加载的课程页面和 API
 
@@ -275,7 +318,8 @@ Windows PowerShell：
 | `ADMIN_PASSWORD` | 管理员后台密码。 |
 | `CONSENT_VERSION` | 当前数据记录告知版本。 |
 | `DAILY_CHAT_AGENT_VERSION` | Daily Chat 实验版本。 |
-| `CBT_COURSE_AGENT_VERSION` | CBT 课程 Agent 实验版本。 |
+| `CBT_COURSE_AGENT_VERSION` | 保留给旧确定性实现；当前课程版本由 services.py 的 AGENT_VERSION 冻结。 |
+| `CBT_REFLECTION_POLICY` | 新课程会话的课内反思策略，默认 none。 |
 | `COOKIE_SECURE` | HTTPS 部署时应为 `true`。 |
 | `SESSION_HOURS` | 登录会话有效期。 |
 | `MAX_MESSAGE_CHARS` | 单条消息长度上限。 |
@@ -328,13 +372,13 @@ GET /admin/exports/bulk/ended.json
 - 邀请码在数据库中使用 Argon2 哈希保存。
 - 消息、课程状态、附件、课后练习、语境快照、Trace 和错误详情使用 AES-GCM 加密。
 - 模型调用前先保存用户消息和 pending `TurnEvent`。
-- 成功、失败和超时均保留可追踪审计记录。当前 freeform 实验尚未输出结构化安全分类。
+- 成功、失败和超时均保留审计，各次模型调用与采用的短反思存入加密 Trace；本地高风险信号在模型前暂停课程，不据此声称覆盖所有风险语义。
 - 同一会话使用幂等键和数据库串行处理，避免重复消息和并发模型调用。
 - 应用日志只记录匿名 participant ID、conversation ID、request ID 和状态，不记录聊天正文。
 - 不同邀请码不能读取彼此的会话。
 - 管理员删除行为会写入审计日志。
 
-当前 freeform 课程使用普通 Chat Completions 文本输出，不要求 `json_schema`。服务端只接受白名单内的附件标记和固定的课程完成标记。
+当前课程使用 JSON Object、Pydantic 与阶段/来源校验，并非提供方原生 strict JSON Schema 输出。完成由本人操作和服务端门禁决定，历史完成标记不再用于完成当前课程。
 
 ## 测试
 
@@ -364,9 +408,9 @@ node --check webapp/static/cbt_course/course.js
 
 - Daily Chat 包导出、公开接口和网页集成。
 - 历史 CBT 记录的查看、导出和只读限制。
-- freeform 第 1 课的完整历史输入、控制标记白名单和完成处理。
+- 八课及第 5、7 课全部路径的确认、完成和课后复盘，路径重选、越界字段、来源撤回与旧版只读。
 - 课程状态刷新恢复、幂等、失败审计和完成后只读。
-- 本课完整对话历史传递及角色语境隔离。
+- 本课有界历史、授权成果摘要、多课回顾及角色语境隔离。
 - 加密、幂等、失败审计和参与者隔离；原确定性实现的测试仍覆盖安全分类。
 - 管理员详情、JSON/CSV 导出和删除。
 - Vercel/Supabase 数据库连接配置。
@@ -389,7 +433,7 @@ node --check webapp/static/cbt_course/course.js
 ## 当前限制
 
 - 网页模式由学生明确选择，没有自动 Mode Router。
-- 当前第 1、2 课开放，第 3—8 课只有目录占位。
-- 没有长期跨 session Memory。
+- 八课工程流程已开放；真实模型专项理解测试与反思效果实验尚未执行，需后续据结果迭代。
+- 已有授权的课程成果摘要复用；尚无通用长期跨 session Memory。
 - 网页应用本身不直接采集或播放音频；树莓派通过独立 `voice-gateway` 提供百炼 ASR/TTS，并只接入 Daily Chat。
 - 历史 Prompt-only CBT 会话仅保留兼容读取能力。

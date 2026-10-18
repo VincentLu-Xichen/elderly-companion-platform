@@ -26,12 +26,14 @@ class DashScopeChatCompletionsClient:
         base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
         timeout: int = 60,
         opener: Callable = urllib.request.urlopen,
+        enable_thinking: bool | None = None,
     ):
         self.api_key = api_key
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.opener = opener
+        self.enable_thinking = enable_thinking
 
     @classmethod
     def from_env(
@@ -84,6 +86,8 @@ class DashScopeChatCompletionsClient:
             payload["temperature"] = temperature
         if response_format:
             payload["response_format"] = response_format
+        if self.enable_thinking is not None:
+            payload["enable_thinking"] = self.enable_thinking
         request = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -123,6 +127,8 @@ class DashScopeChatCompletionsClient:
             "stream": True,
             "stream_options": {"include_usage": True},
         }
+        if self.enable_thinking is not None:
+            payload["enable_thinking"] = self.enable_thinking
         if temperature is not None:
             payload["temperature"] = temperature
         if response_format:

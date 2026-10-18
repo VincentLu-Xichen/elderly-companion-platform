@@ -3,77 +3,73 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="纯对话式认知行为练习课">
   <title>第 {{ conversation.course.lesson.number }} 课 · {{ conversation.course.lesson.title }}</title>
   <link rel="stylesheet" href="/static/styles.css?v=20260731-course">
-  <link rel="stylesheet" href="/static/cbt_course/course.css?v=20260731-2">
-  <script src="/static/cbt_course/course.js?v=20260731-2" defer></script>
+  <link rel="stylesheet" href="/static/cbt_course/course.css?v=stage-focus-1">
+  <script src="/static/cbt_course/stream.js?v=course-stream-1" defer></script>
+  <script src="/static/cbt_course/course.js?v=feedback-pilot-1" defer></script>
 </head>
-<body data-course-page="conversation">
-  <main
-    class="course-conversation"
-    data-conversation-id="{{ conversation.id }}"
-    data-completed="{{ 'true' if conversation.course.completed else 'false' }}"
-  >
+<body data-course-page="conversation" data-preview="{{ 'true' if preview_mode else 'false' }}">
+  <main class="course-conversation guided-course" data-conversation-id="{{ conversation.id }}" data-completed="{{ 'true' if conversation.course.completed else 'false' }}">
     <header class="conversation-header">
       <a href="/cbt-course" class="conversation-back">← 返回课程目录</a>
-      <div class="conversation-title">
-        <p>LESSON {{ "%02d"|format(conversation.course.lesson.number) }} · {{ conversation.lesson_version }}</p>
-        <h1>{{ conversation.course.lesson.title }}</h1>
-      </div>
-      <div class="conversation-progress">
-        <span id="course-phase">{{ conversation.course.phase }}</span>
-        <strong id="course-progress-value">{{ conversation.course.progress_percent }}%</strong>
-        <progress id="course-progress-bar" max="100" value="{{ conversation.course.progress_percent }}">
-          {{ conversation.course.progress_percent }}%
-        </progress>
-      </div>
+      <div class="conversation-title"><p>LESSON {{ "%02d"|format(conversation.course.lesson.number) }} · 一次练习，一点发现</p><h1>{{ conversation.course.lesson.title }}</h1></div>
+      <div class="conversation-progress"><span id="course-phase">{{ conversation.course.phase }}</span><strong id="course-progress-value">第 {{ conversation.course.stage_number }} / {{ conversation.course.stages|length }} 阶段</strong></div>
     </header>
-
-    <section class="conversation-stage">
-      <div id="course-message-list" class="course-message-list" aria-live="polite">
-        {% for message in conversation.messages %}
-        <article class="course-message {{ 'learner' if message.role == 'learner' else 'guide' }}">
-          <span>{{ "我的回答" if message.role == "learner" else "课程引导" }}</span>
-          <div class="course-message-bubble">{{ message.content }}</div>
-          {% if message.attachment %}
-            {% if message.attachment.kind == "image" %}
-            <figure class="course-attachment">
-              <img src="{{ message.attachment.src }}" alt="{{ message.attachment.alt }}">
-              {% if message.attachment.caption %}<figcaption>{{ message.attachment.caption }}</figcaption>{% endif %}
-            </figure>
-            {% elif message.attachment.kind == "formulation" %}
-            <section class="course-formulation-text" aria-label="历史认知行为模型">
-              历史记录：
-              情境：{{ message.attachment.situation }}
-              想法：{{ message.attachment.thought }}{% if message.attachment.thought_belief is not none %}（相信程度 {{ message.attachment.thought_belief }}/10）{% endif %}
-              情绪：{{ message.attachment.emotion }}{% if message.attachment.emotion_intensity is not none %}（强烈程度 {{ message.attachment.emotion_intensity }}/10）{% endif %}
-              行为：{{ message.attachment.behavior }}
-            </section>
-            {% endif %}
-          {% endif %}
-        </article>
-        {% endfor %}
-      </div>
-    </section>
-
-    <form id="course-message-form" class="conversation-composer">
-      <label for="course-message-input">写下你的回答</label>
-      <textarea
-        id="course-message-input"
-        maxlength="2000"
-        rows="3"
-        placeholder="{{ '本课已完成，可返回课程目录查看记录。' if conversation.course.completed else '像聊天一样写下你的回答……' }}"
-        {% if conversation.course.completed %}disabled{% endif %}
-        required
-      ></textarea>
-      <div class="conversation-composer-meta">
-        <span><i></i>回答与进度将加密保存</span>
-        <span id="course-char-count">0 / 2000</span>
-        <button class="conversation-send" type="submit" {% if conversation.course.completed %}disabled{% endif %}>发送 <b>↗</b></button>
-      </div>
-    </form>
+    <div class="guided-status-strip">
+      {% if preview_mode %}<p class="preview-notice">离线规则体验 · 不调用真实模型，自动识别能力有限。请使用页面提供的示例或按提示回答。</p>{% endif %}
+      {% if demo_provider %}<p class="preview-notice">本地课程体验 · 模型服务：{{ demo_provider }} · 生成回复时逐步显示，学习记录在本轮完成后保存。</p>{% endif %}
+      {% if conversation.read_only %}<p class="preview-notice">这是一份历史版本记录，仅供查看。请返回目录开始新版课程。</p>{% endif %}
+      <ol id="course-stages" class="guided-stages" aria-label="本课学习阶段"></ol>
+      <section id="course-stage-focus" class="course-stage-focus" aria-label="当前阶段的练习重点" hidden></section>
+    </div>
+    <div class="guided-workspace">
+      <section class="guided-dialogue" aria-label="课程对话">
+        <section id="course-practice-material" class="learning-check-card" aria-label="虚构练习案例" hidden></section>
+        <section id="course-check-card" class="learning-check-card" aria-label="当前检验案例" hidden></section>
+        <div class="conversation-stage">
+          <div id="course-message-list" class="course-message-list" aria-live="polite">
+            {% for message in conversation.messages %}
+            <article class="course-message {{ 'learner' if message.role == 'learner' else 'guide' }}">
+              <span>{{ "我的回答" if message.role == "learner" else "课程引导" }}</span>
+              <div class="course-message-bubble">{{ message.content }}</div>
+              {% if message.attachment and message.attachment.kind == "image" %}<details class="guided-material"><summary>查看学习材料：{{ message.attachment.alt }}</summary><figure class="course-attachment"><img src="{{ message.attachment.src }}" alt="{{ message.attachment.alt }}">{% if message.attachment.caption %}<figcaption>{{ message.attachment.caption }}</figcaption>{% endif %}</figure></details>{% endif %}
+              {% if message.attachment and message.attachment.kind == "formulation" %}<section class="course-formulation-text">历史记录：
+情境：{{ message.attachment.situation }}
+想法：{{ message.attachment.thought }}{% if message.attachment.thought_belief is not none %}（相信程度 {{ message.attachment.thought_belief }}/10）{% endif %}
+情绪：{{ message.attachment.emotion }}{% if message.attachment.emotion_intensity is not none %}（强烈程度 {{ message.attachment.emotion_intensity }}/10）{% endif %}
+行为：{{ message.attachment.behavior }}</section>{% endif %}
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+        <form id="course-message-form" class="conversation-composer">
+          <div class="composer-label-row"><label for="course-message-input">像聊天一样，说说您的想法</label><button id="course-pause" class="guided-text-button" type="button">暂停课程</button></div>
+          <div id="course-practice-options" class="course-practice-options" aria-label="当前练习项的选择" hidden></div>
+          <textarea id="course-message-input" maxlength="2000" rows="2" placeholder="可以慢慢说，也可以告诉我哪里没讲清楚……" {% if conversation.course.completed or conversation.read_only %}disabled{% endif %}></textarea>
+          <div class="conversation-composer-meta"><span id="course-save-note">对话与学习记录自动加密保存</span><span id="course-char-count">0 / 2000</span><button class="conversation-send" type="submit" {% if conversation.course.completed or conversation.read_only %}disabled{% endif %}>发送 ↗</button></div>
+          <button id="course-preview-example" class="guided-example" type="button" hidden>填入一条体验示例</button>
+          <button id="course-preview-feedback" class="guided-example" type="button" hidden>填入一条澄清反馈</button>
+        </form>
+      </section>
+      <aside class="guided-notebook" aria-label="本课学习记录">
+        <div class="notebook-heading"><span class="notebook-kicker">带走这一点收获</span><h2>我的学习记录</h2><p>这里整理本次练习，核对后再继续。可使用下方操作；第 1 课末的目标、课后安排和总结也可直接用聊天表达选择。</p></div>
+        <section id="course-carryover" class="notebook-section" hidden></section>
+        <section class="notebook-section"><div class="notebook-section-heading"><h3 id="course-record-heading">这次的个人练习</h3><span id="record-confirmation" class="record-pill">待整理</span></div><dl id="course-record" class="guided-record"></dl><p id="record-empty" class="notebook-muted">聊到自己的例子时，记录会逐项出现在这里。</p></section>
+        <section id="course-path-choice" class="notebook-section" hidden></section>
+        <section id="course-pattern-review" class="notebook-section" hidden></section>
+        <section id="course-practice-plan" class="notebook-section" hidden></section>
+        <section id="course-check-results" class="notebook-section" hidden></section>
+        <section id="course-learning-goal" class="notebook-section" hidden></section>
+        <section id="course-learning-evidence" class="notebook-section" hidden></section>
+        <div id="course-actions" class="guided-actions" aria-live="polite"></div>
+        <section id="course-reflection" class="notebook-section" hidden></section>
+        {% if preview_mode %}<details class="notebook-section course-debug"><summary>流程观察（体验环境）</summary><p class="notebook-muted">展示真实状态机与规则模拟调用，不代表真实模型效果。</p><pre id="course-debug-state"></pre></details>{% endif %}
+        <p class="notebook-footer">本课用于学习与研究。完成一次练习，和在生活中熟练运用，是不同的进展。</p>
+      </aside>
+    </div>
   </main>
+  <script id="course-initial-state" type="application/json">{{ conversation|tojson }}</script>
   <div id="course-toast" class="course-toast" role="status" aria-live="polite"></div>
 </body>
 </html>

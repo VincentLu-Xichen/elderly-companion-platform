@@ -67,6 +67,7 @@ class Conversation(Base):
     participant = relationship("Participant", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.sequence")
     turn_events = relationship("TurnEvent", back_populates="conversation", cascade="all, delete-orphan")
+    interaction_reflections = relationship("InteractionReflectionMemory", back_populates="conversation", cascade="all, delete-orphan")
     homework_entries = relationship(
         "CourseHomeworkEntry",
         back_populates="conversation",
@@ -141,6 +142,25 @@ class TurnEvent(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     conversation = relationship("Conversation", back_populates="turn_events")
+
+
+class InteractionReflectionMemory(Base):
+    __tablename__ = "interaction_reflections"
+    __table_args__ = (UniqueConstraint("turn_event_id", name="uq_interaction_reflection_event"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    participant_id: Mapped[str] = mapped_column(ForeignKey("participants.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    turn_event_id: Mapped[str] = mapped_column(ForeignKey("turn_events.id", ondelete="CASCADE"))
+    source_message_id: Mapped[str] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    lesson_id: Mapped[str] = mapped_column(String(40))
+    scope: Mapped[str] = mapped_column(String(20))
+    memory_kind: Mapped[str] = mapped_column(String(30), default="interaction_style", server_default="interaction_style", index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
+    payload_encrypted: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    conversation = relationship("Conversation", back_populates="interaction_reflections")
 
 
 class AdminAuditLog(Base):

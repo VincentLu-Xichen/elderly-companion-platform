@@ -481,6 +481,8 @@ def dialogue_history_payload(conversation: Conversation) -> List[Dict[str, str]]
 
 def full_export_payload(conversation: Conversation) -> Dict[str, Any]:
     payload = conversation_payload(conversation, include_scenario=True)
+    if conversation.lesson_id:
+        payload["course_learning_state"] = decrypt_json(conversation.agent_state_encrypted)
     payload["turn_events"] = [turn_event_payload(event) for event in conversation.turn_events]
     payload["course_homework_entries"] = [
         {

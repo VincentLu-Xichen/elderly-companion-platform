@@ -6,8 +6,8 @@
   <meta name="description" content="认知行为练习课课程目录">
   <title>CBT 课程 · 陪伴对话实验室</title>
   <link rel="stylesheet" href="/static/styles.css?v=20260731-course">
-  <link rel="stylesheet" href="/static/cbt_course/course.css?v=20260731-2">
-  <script src="/static/cbt_course/course.js?v=20260731-2" defer></script>
+  <link rel="stylesheet" href="/static/cbt_course/course.css?v=guided-3">
+  <script src="/static/cbt_course/course.js?v=guided-3" defer></script>
 </head>
 <body data-course-page="catalog">
   <header class="course-topbar">
@@ -28,10 +28,12 @@
         <h1>在对话里，慢慢<br>看清想法与行动。</h1>
       </div>
       <div class="catalog-intro-copy">
-        <p>每一课都通过自然对话推进。进入课程后，你只需要像聊天一样输入文字或数字，不需要操作量表、选项或答题卡。</p>
+        <p>从一个生活例子开始，一起练习，再留下由您确认的学习记录。八课均已开放；课间可以选择接着已有记录，也可以换新例子，第八课可以回顾前面的收获。</p>
         <small>课程用于学习与研究，不代替心理治疗、医疗诊断或紧急救援。</small>
       </div>
     </section>
+    {% if preview_mode %}<p class="preview-notice">离线规则体验 · 不调用真实模型。本次数据与正式数据库隔离，关闭体验服务后清除。测试邀请码：course-preview。</p>{% endif %}
+    {% if demo_provider %}<p class="preview-notice">本地课程体验 · 模型服务：{{ demo_provider }}。数据与正式数据库隔离，关闭体验服务后清除。</p>{% endif %}
 
     <section class="course-grid" aria-label="八次课程">
       {% for course in courses %}
@@ -69,8 +71,8 @@
         {% for item in conversations %}
         <a href="/cbt-course/conversations/{{ item.id }}">
           <span>第 {{ item.lesson_id.split("-")[-1] }} 课</span>
-          <strong>{{ "继续学习" if item.status == "active" else "查看课程与记录日记" }}</strong>
-          <small>{{ item.started_at.strftime("%Y-%m-%d %H:%M") }} · {{ item.status }}</small>
+          <strong>{{ "查看或继续本课" if item.status == "active" else "查看本课学习记录" }}</strong>
+          <small>{{ item.started_at|utc8 }} · {{ {"active": "学习中", "completed": "已完成", "ended": "已结束"}.get(item.status, item.status) }}</small>
         </a>
         {% endfor %}
       </div>

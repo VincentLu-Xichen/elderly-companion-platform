@@ -269,6 +269,131 @@ class VercelDeploymentTest(unittest.TestCase):
 
 
 class WebAppApiFlowTest(unittest.TestCase):
+    def test_lessons_four_to_eight_and_all_paths_complete_through_api(self):
+        from cbt_course_llm_freeform.design import PATHS
+        from cbt_course_llm_freeform.preview import PreviewClient
+        from webapp.database import SessionLocal, init_database
+        init_database()
+        variants = [("lesson-4", None), ("lesson-5", "activation"), ("lesson-5", "exposure"),
+                    ("lesson-6", None), ("lesson-7", "sleep"), ("lesson-7", "relaxation"), ("lesson-8", None)]
+        with TestClient(app) as client, patch("cbt_course_llm_freeform.agent.FreeformCourseAgent._client_from_env", return_value=PreviewClient()):
+            for lesson, path in variants:
+                with self.subTest(lesson=lesson, path=path):
+                    code = "eight-api-" + uuid.uuid4().hex
+                    with SessionLocal() as db:
+                        db.add(Participant(label=code, invite_hash=hash_secret(code))); db.commit()
+                    self.assertEqual(client.post("/api/session/invite", json={"code": code}).status_code, 200)
+                    headers = {"X-CSRF-Token": client.cookies.get("csrf_token")}
+                    self.assertEqual(client.post("/api/consents", json={"agreed": True}, headers=headers).status_code, 200)
+                    created = client.post(f"/api/cbt-course/lessons/{lesson}/start", json={}, headers=headers)
+                    self.assertEqual(created.status_code, 200)
+                    conversation_id = created.json()["id"]
+                    endpoint = f"/api/cbt-course/conversations/{conversation_id}"
+
+                    def turn(text="", action="chat"):
+                        current = client.get(endpoint).json()["course"]
+                        response = client.post(endpoint + "/messages", json={"content": text, "action": action,
+                            "expected_revision": current["revision"], "idempotency_key": uuid.uuid4().hex}, headers=headers)
+                        self.assertEqual(response.status_code, 200, response.text)
+                        return response.json()["course"]
+
+                    course = turn(action="skip_checkin")
+                    if path:
+                        self.assertTrue(course["needs_path_choice"])
+                        course = turn(action=PATHS[lesson][path]["action"])
+                    course = turn(course["preview_examples"]["learn"])
+                    for _ in range(4):
+                        if course["current_step"] != "practice":
+                            break
+                        course = turn(course["preview_examples"]["practice"])
+                    self.assertEqual(course["current_step"], "review")
+                    turn(action="confirm_record")
+                    turn(action="decline_practice")
+                    turn(action="finish")
+                    final = client.get(endpoint).json()["course"]
+                    self.assertTrue(final["completed"])
+                    self.assertEqual(final["path"], path)
+                    self.assertEqual(final["reflection"]["status"], "ready")
+                    self.assertIn('id="course-path-choice"', client.get(f"/cbt-course/conversations/{conversation_id}").text)
+
+    def test_guided_three_lesson_api_with_confirmation_and_background_reflection(self):
+        from cbt_course_llm_freeform.preview import PreviewClient
+        from webapp.database import SessionLocal, init_database
+        init_database()
+        code = "guided-" + uuid.uuid4().hex
+        with SessionLocal() as db:
+            participant = Participant(label=code, invite_hash=hash_secret(code))
+            db.add(participant)
+            db.commit()
+        # Three complete lessons run instantly here; rate rejection has its own test.
+        with TestClient(app) as client, patch("cbt_course_llm_freeform.agent.FreeformCourseAgent._client_from_env", return_value=PreviewClient()), patch("webapp.rate_limit.settings", SimpleNamespace(app_secret="three-lesson-test-secret", rate_limit_per_minute=100)):
+            self.assertEqual(client.post("/api/session/invite", json={"code": code}).status_code, 200)
+            headers = {"X-CSRF-Token": client.cookies.get("csrf_token")}
+            client.post("/api/consents", json={"agreed": True}, headers=headers)
+
+            def turn(conversation_id, content="", action="chat", **extra):
+                response = client.post(f"/api/cbt-course/conversations/{conversation_id}/messages", json={"content": content, "action": action, "idempotency_key": uuid.uuid4().hex, **extra}, headers=headers)
+                self.assertEqual(response.status_code, 200, response.text)
+                return response.json()
+
+            first = client.post("/api/cbt-course/lessons/lesson-1/start", json={}, headers=headers).json()["id"]
+            turn(first, action="skip_checkin")
+            turn(first, "这句是想法，失落是心情。")
+            record = turn(first, "事情：女儿没有回电话；想法：她是不是不在乎我；心情：失落；做法：没有再联系")
+            self.assertEqual(record["course"]["current_step"], "review")
+            self.assertFalse(record["course"]["record_confirmed"])
+            denied = client.post(f"/api/cbt-course/conversations/{first}/messages", json={"action": "confirm_record", "expected_revision": 0, "idempotency_key": uuid.uuid4().hex}, headers=headers)
+            self.assertEqual(denied.status_code, 400)
+            turn(first, action="confirm_record", expected_revision=record["course"]["revision"])
+            for answer in ("邻居向他问好", "他担心对方觉得自己没礼貌", "紧张", "低下头，没有回应"):
+                turn(first, answer)
+            turn(first, action="continue_after_check")
+            turn(first, "我希望先分清事情和自己的猜测。")
+            turn(first, action="confirm_learning_goal")
+            turn(first, action="accept_practice")
+            turn(first, "生活例子容易懂，我希望术语讲慢一点。")
+            turn(first, action="finish")
+            stored = client.get(f"/api/cbt-course/conversations/{first}").json()
+            self.assertTrue(stored["course"]["completed"])
+            self.assertEqual(stored["course"]["reflection"]["status"], "ready")
+            self.assertFalse(stored["course"]["reflection"]["applied"])
+            second = client.post("/api/cbt-course/lessons/lesson-2/start", json={}, headers=headers).json()["id"]
+            offered = client.get(f"/api/cbt-course/conversations/{second}").json()
+            self.assertEqual(offered["course"]["carryover"]["status"], "offered")
+            accepted = turn(second, action="accept_carryover")
+            self.assertEqual(accepted["course"]["carryover"]["status"], "accepted")
+            turn(second, "这周还没有尝试记录。")
+            turn(second, "有人失落，有人平静，因为想法不同。")
+            turn(second, "事情：散步时下雨；想法：安排又泡汤了；心情：失望")
+            turn(second, action="confirm_record")
+            turn(second, action="decline_practice")
+            turn(second, action="finish")
+            page = client.get(f"/cbt-course/conversations/{second}")
+            self.assertEqual(page.status_code, 200)
+            self.assertIn("我的学习记录", page.text)
+            self.assertTrue(client.get(f"/api/cbt-course/conversations/{second}").json()["course"]["record_confirmed"])
+            third = client.post("/api/cbt-course/lessons/lesson-3/start", json={}, headers=headers).json()["id"]
+            offered = client.get(f"/api/cbt-course/conversations/{third}").json()["course"]
+            self.assertEqual(offered["carryover"]["summary"]["lesson_id"], "lesson-2")
+            turn(third, action="accept_carryover")
+            turn(third, action="skip_checkin")
+            turn(third, "肯定嫌我烦是在猜测别人的想法，目前还不知道。")
+            adopted = turn(third, action="reuse_case")["course"]
+            self.assertEqual(len(adopted["record"]), 3)
+            self.assertTrue(all("source_artifact_id" in field for field in adopted["record"]))
+            turn(third, "线索：我觉得是一个猜测，还没有问过对方")
+            denied = client.post(f"/api/cbt-course/conversations/{third}/messages", json={"action": "confirm_record", "idempotency_key": uuid.uuid4().hex}, headers=headers)
+            self.assertEqual(denied.status_code, 400)
+            turn(third, action="unsure_pattern")
+            turn(third, action="confirm_record")
+            turn(third, action="decline_practice")
+            turn(third, action="finish")
+            final = client.get(f"/api/cbt-course/conversations/{third}").json()["course"]
+            self.assertTrue(final["completed"])
+            self.assertEqual(final["pattern_review"]["status"], "unsure")
+            self.assertEqual(final["reflection"]["status"], "ready")
+            self.assertIn('id="course-pattern-review"', client.get(f"/cbt-course/conversations/{third}").text)
+
     def test_home_navigation_and_participant_logout(self):
         with TestClient(app) as client:
             login = client.post("/api/session/invite", json={"code": "test-invite"})
@@ -320,7 +445,7 @@ class WebAppApiFlowTest(unittest.TestCase):
             self.assertEqual(catalog.text.count('class="course-tile '), 8)
             self.assertIn("认知行为三角", catalog.text)
             self.assertIn("看见情境、想法和心情", catalog.text)
-            self.assertEqual(catalog.text.count("内容准备中"), 6)
+            self.assertEqual(catalog.text.count("内容准备中"), 0)
             self.assertIn("/static/cbt_course/course.css", catalog.text)
             self.assertEqual(client.get("/static/cbt_course/course.css").status_code, 200)
             course_asset = client.get("/cbt-course-assets/lesson_1/course-overview.svg")
@@ -339,14 +464,14 @@ class WebAppApiFlowTest(unittest.TestCase):
             self.assertEqual(lesson_2_created.status_code, 200)
             lesson_2_id = lesson_2_created.json()["id"]
             lesson_2_payload = client.get(f"/api/cbt-course/conversations/{lesson_2_id}").json()
-            self.assertEqual(lesson_2_payload["course"]["current_step"], "freeform")
+            self.assertEqual(lesson_2_payload["course"]["current_step"], "check_in")
             self.assertEqual(lesson_2_payload["course"]["lesson"]["id"], "lesson-2")
             self.assertEqual(lesson_2_payload["messages"][0]["attachment"], {})
             lesson_2_page = client.get(f"/cbt-course/conversations/{lesson_2_id}")
             self.assertIn("LESSON 02", lesson_2_page.text)
             self.assertIn("看见情境、想法和心情", lesson_2_page.text)
 
-            unavailable = client.post("/api/cbt-course/lessons/lesson-3/start", json={}, headers=headers)
+            unavailable = client.post("/api/cbt-course/lessons/lesson-9/start", json={}, headers=headers)
             self.assertEqual(unavailable.status_code, 400)
 
             course_page = client.get(f"/cbt-course/conversations/{conversation_id}")
@@ -355,14 +480,15 @@ class WebAppApiFlowTest(unittest.TestCase):
             self.assertIn('id="course-message-input"', course_page.text)
             self.assertIn('class="conversation-send"', course_page.text)
             self.assertIn("course-overview.svg", course_page.text)
-            self.assertEqual(course_page.text.count("<button"), 1)
+            self.assertIn('id="course-record"', course_page.text)
+            self.assertIn('id="course-actions"', course_page.text)
             self.assertNotIn('type="radio"', course_page.text)
             self.assertNotIn('type="range"', course_page.text)
             self.assertNotIn("继续按钮", course_page.text)
 
             initial_payload = client.get(f"/api/cbt-course/conversations/{conversation_id}")
             self.assertEqual(initial_payload.status_code, 200)
-            self.assertEqual(initial_payload.json()["course"]["current_step"], "freeform")
+            self.assertEqual(initial_payload.json()["course"]["current_step"], "check_in")
             self.assertEqual(initial_payload.json()["messages"][0]["attachment"]["kind"], "image")
             legacy_message = client.post(
                 f"/api/conversations/{conversation_id}/messages",
@@ -374,10 +500,12 @@ class WebAppApiFlowTest(unittest.TestCase):
                 def __init__(self, *args, **kwargs):
                     pass
 
-                def reply(self, history):
+                def reply(self, history, *, context=None):
+                    from cbt_course_llm_freeform.schemas import TeachingDecision
                     return SimpleNamespace(
                         reply="谢谢你告诉我。最近发生过哪一件让你困扰的事？",
                         completion=None,
+                        decision=TeachingDecision(reply="最近发生过哪一件让你困扰的事？", observations=[{"field": "mood", "value": history[-1]["content"], "source_message_id": history[-1]["id"]}], advance=True),
                     )
 
             with patch("cbt_course_llm_freeform.runtime.FreeformCourseAgent", FakeFreeformAgent):
@@ -387,10 +515,10 @@ class WebAppApiFlowTest(unittest.TestCase):
                     headers=headers,
                 )
             self.assertEqual(mood.status_code, 200)
-            self.assertEqual(mood.json()["course"]["current_step"], "freeform")
+            self.assertEqual(mood.json()["course"]["current_step"], "learn")
             restored = client.get(f"/api/cbt-course/conversations/{conversation_id}").json()
             self.assertEqual(len(restored["messages"]), 3)
-            self.assertEqual(restored["course"]["current_step"], "freeform")
+            self.assertEqual(restored["course"]["current_step"], "learn")
             redirected = client.get(f"/conversations/{conversation_id}")
             self.assertEqual(redirected.status_code, 200)
             self.assertIn("/cbt-course/conversations/", str(redirected.url))

@@ -13,14 +13,15 @@ from sqlalchemy.orm import sessionmaker
 from cbt_course_llm_freeform.agent import FreeformCourseAgent
 from cbt_course_llm_freeform.azure_chat_client import AzureChatCompletionsClient, ChatCompletionResult
 from cbt_course_llm_freeform.catalog import LESSON_2_VERSION, course_by_id
-from cbt_course_llm_freeform.lesson_2 import SYSTEM_PROMPT as LESSON_2_SYSTEM_PROMPT
+from cbt_course_llm_freeform.prompt import prompt_for_lesson
+LESSON_2_SYSTEM_PROMPT = prompt_for_lesson("lesson-2")
 from cbt_course_llm_freeform.runtime import (
     FreeformCourseRuntime,
     course_payload,
     new_course_state,
     parse_control_markers,
 )
-from cbt_course_llm_freeform.schemas import AgentResult, TurnResult
+from cbt_course_llm_freeform.schemas import AgentResult, TurnResult, TeachingDecision
 from cbt_course_llm_freeform.services import AGENT_VERSION, create_or_resume_course, process_course_turn
 from webapp.database import Base
 from webapp.models import Conversation, Message, Participant, TurnEvent
@@ -29,7 +30,7 @@ from webapp.security import decrypt_json, hash_secret
 
 class CapturingClient:
     def __init__(self, text: str):
-        self.text = text
+        self.text = json.dumps({"reply": text, "observations": [], "advance": False}, ensure_ascii=False)
         self.messages = []
         self.kwargs = {}
 
@@ -44,11 +45,12 @@ class FakeAgent:
         self.reply_text = reply
         self.history = None
 
-    def reply(self, history):
+    def reply(self, history, *, context=None):
         self.history = history
         return AgentResult(
             reply=self.reply_text,
             completion=ChatCompletionResult(text=self.reply_text, model="freeform-test"),
+            decision=TeachingDecision(reply=self.reply_text),
         )
 
 
@@ -102,7 +104,7 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
         self.assertEqual(len(attempts), 3)
         self.assertEqual(delays, [0.5, 1.0])
 
-    def test_agent_sends_complete_course_history_without_structured_format(self):
+    def test_agent_sends_course_history_with_ids_and_structured_format(self):
         client = CapturingClient("我们继续。")
         history = [
             {"role": "agent", "content": "欢迎来到第一课"},
@@ -115,7 +117,7 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
         sent = "\n".join(item["content"] for item in client.messages)
         self.assertIn("女儿没有回电话", sent)
         self.assertNotIn("scenario_id", sent)
-        self.assertNotIn("response_format", client.kwargs)
+        self.assertEqual(client.kwargs["response_format"], {"type": "json_object"})
         self.assertEqual(client.kwargs["temperature"], 1.0)
 
     def test_control_markers_are_removed_and_whitelisted(self):
@@ -135,21 +137,21 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
         self.assertIsNone(key)
         self.assertFalse(completed)
 
-    def test_runtime_has_only_started_and_completed_progress(self):
+    def test_model_completion_marker_cannot_complete_a_course(self):
         state = new_course_state("lesson-1")
         fake = FakeAgent("我们继续梳理。")
         result = FreeformCourseRuntime(agent=fake).process(state, [{"role": "learner", "content": "回答"}])
         self.assertEqual(course_payload(result.state)["progress_percent"], 0)
-        self.assertEqual(course_payload(result.state)["phase"], "LLM 自由引导")
+        self.assertEqual(course_payload(result.state)["phase"], "近况与回顾")
         self.assertEqual(fake.history[-1]["content"], "回答")
 
         result = FreeformCourseRuntime(agent=FakeAgent("本课结束。[[CBT_COURSE_COMPLETE]]")).process(
             result.state, [{"role": "learner", "content": "目标不用修改"}]
         )
-        self.assertTrue(result.state["completed"])
-        self.assertEqual(course_payload(result.state)["progress_percent"], 100)
-        with self.assertRaisesRegex(ValueError, "仅支持查看"):
-            FreeformCourseRuntime(agent=FakeAgent("不应调用")).process(result.state, [])
+        self.assertFalse(result.state["completed"])
+        self.assertEqual(course_payload(result.state)["progress_percent"], 0)
+        with self.assertRaisesRegex(ValueError, "当前阶段"):
+            FreeformCourseRuntime(agent=FakeAgent("不应调用")).process(result.state, [{"id": "finish", "role": "learner", "content": "完成本课"}], action="finish")
 
     def test_marker_only_reply_is_rejected(self):
         with self.assertRaisesRegex(RuntimeError, "控制标记"):
@@ -168,22 +170,8 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
             max_completion_tokens=600,
         ).reply([{"role": "learner", "content": "最近还可以"}])
         self.assertIn("第 2 课", client.messages[0]["content"])
-        self.assertIn("推进门槛", client.messages[0]["content"])
-        self.assertIn("最近总是头疼", client.messages[0]["content"])
-        self.assertIn("不能被简单说成", client.messages[0]["content"])
-        self.assertIn("缺少任何一项都不能添加", client.messages[0]["content"])
-        self.assertIn("听见重点—顺势回应—往前问一步", client.messages[0]["content"])
-        self.assertIn("熟悉老年人生活经验和表达习惯的老师", client.messages[0]["content"])
-        self.assertIn("可以模仿的自然说法", client.messages[0]["content"])
-        self.assertIn("三道短题", client.messages[0]["content"])
-        self.assertIn("老朋友的另一种看法", client.messages[0]["content"])
-        self.assertIn("社区活动室", client.messages[0]["content"])
-        self.assertIn("忠实理解学习者", client.messages[0]["content"])
-        self.assertIn("她当时说了什么", client.messages[0]["content"])
-        self.assertIn("正常语速约 8—15 秒", client.messages[0]["content"])
-        self.assertIn("会被直接朗读出来", client.messages[0]["content"])
-        self.assertIn("改写成两三句自然对话", client.messages[0]["content"])
-        self.assertIn("先发生了什么，接着脑子里想到什么", client.messages[0]["content"])
+        self.assertIn("不把身体不适简单说成情绪", client.messages[0]["content"])
+        self.assertIn("记录确认、课后选择、结束和授权由学习者显式操作", client.messages[0]["content"])
         self.assertEqual(client.kwargs["max_completion_tokens"], 600)
 
     def test_lesson_2_local_safety_skips_model(self):
@@ -225,7 +213,7 @@ class FreeformServiceTest(unittest.TestCase):
         self.assertTrue(resumed)
         self.assertEqual(same.id, conversation.id)
         self.assertEqual(conversation.agent_version, AGENT_VERSION)
-        self.assertIn("llm-freeform", conversation.active_course_key)
+        self.assertIn("6.8-stop-probing", conversation.active_course_key)
         self.assertIsNone(conversation.scenario_snapshot_encrypted)
 
         conversation.agent_version = "course-v1"
@@ -270,7 +258,8 @@ class FreeformServiceTest(unittest.TestCase):
             runtime_factory=CompletingRuntime,
         )
         self.assertEqual(captured_histories[0][0]["role"], "agent")
-        self.assertEqual(captured_histories[0][-1], {"role": "learner", "content": "目标不用修改"})
+        self.assertEqual(captured_histories[0][-1]["content"], "目标不用修改")
+        self.assertTrue(captured_histories[0][-1]["id"])
         self.assertTrue(first["course"]["completed"])
         self.assertTrue(second["deduplicated"])
         self.assertIsNone(first["safety_event"])
@@ -331,7 +320,7 @@ class FreeformServiceTest(unittest.TestCase):
         )
         self.assertFalse(resumed)
         self.assertEqual(conversation.lesson_version, LESSON_2_VERSION)
-        self.assertIn("lesson-2:llm-freeform-v2.7", conversation.active_course_key)
+        self.assertIn("lesson-2:5.1-interaction-memory", conversation.active_course_key)
         messages = self.db.scalars(select(Message).where(Message.conversation_id == conversation.id)).all()
         self.assertEqual(len(messages), 1)
         self.assertIsNone(messages[0].attachment_encrypted)
