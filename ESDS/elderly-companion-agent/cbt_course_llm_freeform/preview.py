@@ -37,12 +37,17 @@ class PreviewClient:
                 output = {"observations": [], "suggestions": []}
         else:
             context = json.loads(messages[1]["content"])["data"]
+            if "COURSE_CASE_REVIEW" in prompt:
+                fields = list(context["fields"].values())
+                output = {"summary": ("虚构案例中，" if context["fictional"] else "这次您提到：") + "；".join(item["value"] for item in fields)[:240] + "。",
+                    "source_message_ids": list(dict.fromkeys(item["source_message_id"] for item in fields))[:8]}
+                return ChatCompletionResult(text=json.dumps(output, ensure_ascii=False), model="offline-rule-preview", finish_reason="stop")
             latest = next(json.loads(item["content"]) for item in reversed(messages) if item["role"] == "user" and "text" in json.loads(item["content"]))
             if "COURSE_NAVIGATION" in prompt:
                 # Offline demonstration only; real runs use the navigation LLM.
                 text = latest["text"]
                 if context["stage"] == "learning_goal" and not re.search(r"完成|结束|继续|跳过|不设", text):
-                    output = {"intent": "goal", "actions": [], "reply": ""}
+                    output = {"intent": "goal", "actions": [], "reply": "", "goal_items": [item.strip() for item in re.split(r"[；;\n]", text) if item.strip()]}
                 else:
                     output = {"intent": "clarify", "actions": [], "reply": "您是想保留当前安排，还是跳过这个可选环节？"}
             elif "COURSE_CHECK_ANSWER" in prompt:
@@ -100,23 +105,27 @@ class PreviewClient:
             if not uncertain:
                 record("mood", text[:450]); advance = True
             reply = "谢谢您告诉我，我们按您舒服的节奏来。" if advance else "可以慢慢说，不用一定打分。您也可以选择先看一个例子。"
-        elif stage == "learn":
+        elif stage == "learn" and not context.get("blueprint"):
             if not uncertain and any(word in text for word in ("想法", "心情", "平静", "失落", "难过", "不同", "担心", "猜测", "推测", "安全", "小步", "不必", "不能", "信号", "依据", "调整", "技能", "原来的", "事实", "信息")):
                 record("learning_response", text[:450]); advance = True
             reply = "谢谢您的回答，我们接着看自己的例子。" if advance else "我们先用生活里的话看看这个例子。" + context["example"]
-        elif stage == "practice":
+        elif stage == "practice" or context.get("blueprint") and stage in {"learn", "review"}:
             labels = {label: field for field, label in context["field_input_labels"].items()}
             labels.update({"情绪": "emotion", "行为": "behavior", "依据": "awareness_note"})
+            labels.update({"相信程度": "thought_belief", "情绪强度": "emotion_intensity"})
             tag_pattern = "|".join(re.escape(label) for label in sorted(labels, key=len, reverse=True))
             matches = list(re.finditer(r"(?:^|[；;\n])\s*(" + tag_pattern + r")\s*[:：]\s*([^；;\n]+)", text))
             for match in matches:
                 field = labels[match.group(1)]
                 if field in context["required_fields"] and match.group(2).strip():
-                    record(field, match.group(2).strip()[:450])
-            missing = [field for field in context["required_fields"] if field not in context["recorded_fields"] and field not in [item["field"] for item in observations]]
+                    record(field, match.group(0).strip("；;\n ") if field in {"thought_belief", "emotion_intensity"} else match.group(2).strip()[:450])
+            missing = [field for field in context["missing_fields"] if field not in [item["field"] for item in observations]]
+            if not matches and stage == "review" and not uncertain:
+                record("relationship_note", text[:450])
             if not matches and missing and not uncertain:
-                record(missing[0], text[:450]); missing = missing[1:]
-            reply = QUESTIONS[missing[0]] if missing else "我们来一起核对这份记录。"
+                record("relationship_note" if stage == "review" else "situation" if stage == "learn" else missing[0], text[:450]); missing = missing[1:]
+            from cbt_course_llm_freeform.blueprint import QUESTIONS as BLUEPRINT_QUESTIONS
+            reply = {**QUESTIONS, **BLUEPRINT_QUESTIONS}[missing[0]] if missing else "我们来一起核对这份记录。"
             merged = {**context["recorded_fields"], **{item["field"]: item for item in observations}}
             thought = merged.get("thought", {}).get("value", "")
             note = merged.get("awareness_note", {}).get("value", "")

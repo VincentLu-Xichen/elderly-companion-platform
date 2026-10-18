@@ -78,7 +78,7 @@ def switch(state, kind):
         if kind == "personal" or source(state).get("material_id") == material(state)["material_id"]:
             return
     if state.get("draft_record") or state.get("confirmed_record"):
-        flow["archived"].append({"case_id": state["case_id"], "source": copy.deepcopy(source(state)),
+        flow["archived"].append({"case_id": state["case_id"], "source": copy.deepcopy(source(state)), "blueprint": copy.deepcopy(state.get("blueprint")),
                                  "record": copy.deepcopy(state["draft_record"]), "confirmed_record": copy.deepcopy(state.get("confirmed_record"))})
     state["case_id"] = str(uuid.uuid4())
     state["draft_record"], state["confirmed_record"] = {}, None
@@ -87,6 +87,11 @@ def switch(state, kind):
     if state.get("practice_flow"):
         state["practice_flow"]["unanswered"], state["practice_flow"]["deferred"] = {}, {}
     state["practice_source"] = material(state) if kind == "fictional" else {"kind": "personal"}
+    from cbt_course_llm_freeform import blueprint
+    if blueprint.enabled(state):
+        blueprint.reset_case(state)
+        if state["stage"] == "learn":
+            state["stage"] = "practice"
     if state["stage"] == "review":
         state["stage"] = "practice"
 
@@ -105,7 +110,8 @@ def context(state):
 
 
 def applicable(state):
-    return enabled(state) and state["stage"] in {"practice", "review"} or bool(state.get("disclosure_boundary"))
+    from cbt_course_llm_freeform import blueprint
+    return enabled(state) and (state["stage"] in {"practice", "review"} or blueprint.enabled(state) and state["stage"] == "learn") or bool(state.get("disclosure_boundary"))
 
 
 def apply(state, note, latest):

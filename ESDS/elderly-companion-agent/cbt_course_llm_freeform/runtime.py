@@ -17,11 +17,12 @@ from cbt_course_llm_freeform.lesson_2 import HARD_SAFETY_SIGNALS, SAFETY_MESSAGE
 from cbt_course_llm_freeform.prompt import prompt_for_lesson
 from cbt_course_llm_freeform.schemas import TeachingDecision, TurnResult
 from cbt_course_llm_freeform import learning_check, practice_flow, interaction, boundaries
-from cbt_course_llm_freeform import navigation
+from cbt_course_llm_freeform import navigation, blueprint
 
 IMPLEMENTATION = "guided_cbt_v3"
 ATTACHMENT_PATTERN = re.compile(r"\[\[CBT_ATTACHMENT:([^\]\r\n]+)\]\]")
 ACTION_LABELS = {
+    "edit_learning_goal": "修改课程目标",
     "skip_checkin": "先看例子", "confirm_record": "确认这份记录", "edit_record": "我要修改记录",
     "accept_practice": "愿意试一次", "decline_practice": "这次不安排", "finish": "完成本课",
     "pause": "暂停课程", "resume": "继续课程", "accept_carryover": "使用已确认的课程摘要",
@@ -63,6 +64,7 @@ def new_course_state(lesson_id: str, *, reflection_policy: str | None = None) ->
         **({"privacy": boundaries.new_flow()} if lesson_id == "lesson-1" else {}),
         **({"navigation_version": navigation.VERSION} if lesson_id == "lesson-1" else {}),
         **({"interaction_response_version": interaction.RESPONSE_VERSION} if lesson_id == "lesson-1" else {}),
+        **({"blueprint": blueprint.new_flow()} if lesson_id == "lesson-1" else {}),
     }
 
 
@@ -75,6 +77,8 @@ def course_payload(state: dict[str, Any] | None) -> dict[str, Any]:
     checked = learning_check.enabled(state)
     stages = learning_check.STAGES if checked else STAGES
     labels = {**STAGE_LABELS, **learning_check.LABELS}
+    if blueprint.enabled(state):
+        labels.update(learn="选择困扰与情境", practice="逐步理解这件事", review="回看模型与核对", assessment="四要素辨认练习", learning_goal="整套课程目标")
     if boundaries.fictional(state):
         labels.update(practice="用案例一起练习", review="核对案例练习")
     examples = preview_examples(state)
@@ -113,6 +117,7 @@ def course_payload(state: dict[str, Any] | None) -> dict[str, Any]:
         "personal_practice_scope": practice_flow.scope(state) if practice_flow.enabled(state) else None,
         "learning_goal": state.get("learning_goal") or ({"status": "draft", **state["learning_goal_draft"]} if state.get("learning_goal_draft") else None),
         "application_status": "尚未收集生活中运用的反馈", "formulation": {}, "quiz_results": {},
+        "blueprint": blueprint.payload(state),
     }
 
 
@@ -138,6 +143,8 @@ def faithful_excerpt(source: str, quote: str) -> bool:
 def next_question(state: dict) -> str:
     if learning_check.enabled(state) and state["stage"] in {"assessment", "check_feedback", "learning_goal"}:
         return learning_check.next_prompt(state)
+    if blueprint.enabled(state) and state["stage"] in {"learn", "practice", "review"}:
+        return blueprint.instruction(state)
     if state["stage"] == "practice":
         if boundaries.fictional(state):
             field = next(iter(practice_flow.missing(state)), None)
@@ -158,10 +165,13 @@ class FreeformCourseRuntime:
 
     def _context(self, state: dict) -> dict:
         lesson_id, stage = state["lesson_id"], state["stage"]
-        return {"lesson_id": lesson_id, "stage": stage, "stage_label": {**STAGE_LABELS, **learning_check.LABELS}[stage],
+        labels = {**STAGE_LABELS, **learning_check.LABELS}
+        if blueprint.enabled(state):
+            labels.update(learn="选择困扰与情境", practice="逐步理解这件事", review="回看模型与核对", assessment="四要素辨认练习", learning_goal="整套课程目标")
+        return {"lesson_id": lesson_id, "stage": stage, "stage_label": labels[stage],
                 "path": state.get("path"), "path_label": (path_spec(state) or {}).get("label"),
                 "task_step_id": task_step_id(state), "case_id": state["case_id"],
-                "recorded_fields": state["draft_record"], "required_fields": required_fields(state), "field_input_labels": INPUT_LABELS,
+                "recorded_fields": state["draft_record"], "required_fields": blueprint.FIELDS if blueprint.enabled(state) else required_fields(state), "field_input_labels": INPUT_LABELS,
                 "field_labels": FIELD_LABELS, "missing_fields": practice_flow.missing(state),
                 "stage_focus": practice_flow.stage_focus(state), "personal_practice": practice_flow.payload(state),
                 "interaction_adaptation": copy.deepcopy(practice_flow.adaptation(state)),
@@ -174,8 +184,9 @@ class FreeformCourseRuntime:
                 "confirmed_record": state.get("confirmed_record"), "domain_candidates": state.get("domain_candidates", []),
                 "authorized_previous_lesson_summary": state["carryover"].get("summary") if state["carryover"].get("status") == "accepted" else None,
                 "authorized_previous_lesson_summaries": [item["summary"] for item in state["carryover"].get("sources", [])] if state["carryover"].get("status") == "accepted" else [],
-                "active_guidance": active_guidance(state), "next_question": next_question(state), "example": lesson_example(state),
-                "guided_example": dict(LESSON_1_GUIDED_EXAMPLE) if lesson_id == "lesson-1" and stage == "learn" else None,
+                "active_guidance": active_guidance(state), "next_question": next_question(state), "example": blueprint.CONCEPTS["situation"] if blueprint.enabled(state) else lesson_example(state),
+                "blueprint": blueprint.payload(state),
+                "guided_example": dict(LESSON_1_GUIDED_EXAMPLE) if lesson_id == "lesson-1" and stage == "learn" and not blueprint.enabled(state) else None,
                 "learning_check": learning_check.payload(state) if learning_check.enabled(state) else None}
 
     def process(self, state: dict[str, Any], history: list[dict[str, str]], *, action: str = "chat") -> TurnResult:
@@ -187,9 +198,10 @@ class FreeformCourseRuntime:
         self.model_calls = []
         if isinstance(self.agent, FreeformCourseAgent):
             self.agent.call_log = self.model_calls
+            hide_draft = practice_flow.enabled(updated) and updated["stage"] in ({"learn", "practice", "review"} if blueprint.enabled(updated) else {"practice", "review"})
             if self.on_reply is not None:
-                self.agent.on_reply = None if practice_flow.enabled(updated) and updated["stage"] in {"practice", "review"} else self.on_reply
-            self.agent.stream_teaching = updated["workflow"]["policy"] == "none" and not (practice_flow.enabled(updated) and updated["stage"] in {"practice", "review"})
+                self.agent.on_reply = None if hide_draft else self.on_reply
+            self.agent.stream_teaching = updated["workflow"]["policy"] == "none" and not hide_draft
         if updated.get("implementation") != IMPLEMENTATION:
             raise ValueError("该课程使用旧版实现，仅支持查看。请从课程目录进入新版。")
         if updated.get("completed"):
@@ -219,10 +231,12 @@ class FreeformCourseRuntime:
             return self._result(updated, reply, stage_before, action=action)
         boundary_candidate = boundaries.applicable(updated) and (boundaries.candidate(text) or
             updated.get("privacy", {}).get("pending") or updated.get("privacy", {}).get("recovery"))
-        if natural_feedback and (interaction.candidate(text) or boundary_candidate):
+        if natural_feedback and (interaction.candidate(text, task_feedback=blueprint.enabled(updated)) or boundary_candidate):
             event_result = self._interaction_event(updated, history, latest, stage_before)
             if event_result is not None:
                 return event_result
+        if blueprint.enabled(updated) and updated["stage"] == "learn" and blueprint.select_case(updated, latest):
+            return self._result(updated, "我们先看您选的这一件：" + updated["draft_record"]["situation"]["value"] + "。" + next_question(updated), stage_before, action="select_case")
         if updated.get("navigation_version") == navigation.VERSION and updated["stage"] in {"learning_goal", "plan", "summary"}:
             return self._navigate(updated, history, latest, stage_before)
         if learning_check.enabled(updated) and updated["stage"] == "learning_goal":
@@ -232,9 +246,22 @@ class FreeformCourseRuntime:
                 self.agent = FreeformCourseAgent(system_prompt=prompt_for_lesson(lesson_id), max_completion_tokens=MODEL_TOKEN_LIMITS[lesson_id], on_reply=self.on_reply)
                 self.agent.call_log = self.model_calls
             reply, completion = learning_check.answer(updated, latest, self.agent)
+            if not isinstance(reply, str):
+                note = interaction.validate(reply, latest)
+                event_result = self._accept_interaction(updated, note, latest, stage_before, completion)
+                if event_result is not None:
+                    return event_result
+                # A reported non-feedback/uncertain message is not automatically
+                # an answer, a hint request or permission to skip.
+                return self._result(updated, "这一轮先不计作答。您可以继续回答当前题，也可以直接说想跳过或暂停。", stage_before,
+                    completion=completion, action="check_intent_uncertain")
             updated["workflow"]["last_trigger"] = {"triggered": False, "reason_codes": ["learning_check_no_early_feedback"]}
             return self._result(updated, reply, stage_before, completion=completion, action="learning_check")
-        if stage_before == "review":
+        if blueprint.enabled(updated) and stage_before == "learn":
+            focus_before_learn = "situation"
+        else:
+            focus_before_learn = None
+        if stage_before == "review" and not blueprint.enabled(updated):
             updated["stage"] = "practice"
         stage = updated["stage"]
         bounded_practice = practice_flow.enabled(updated) and stage == "practice"
@@ -246,8 +273,9 @@ class FreeformCourseRuntime:
             self.agent = FreeformCourseAgent(system_prompt=prompt_for_lesson(lesson_id), max_completion_tokens=MODEL_TOKEN_LIMITS[lesson_id], on_reply=self.on_reply)
             self.agent.call_log = self.model_calls
         if isinstance(self.agent, FreeformCourseAgent):
-            self.agent.stream_teaching = updated["workflow"]["policy"] == "none" and not bounded_practice
-            if bounded_practice:
+            hide_draft = bounded_practice or blueprint.enabled(updated) and stage in {"learn", "review"}
+            self.agent.stream_teaching = updated["workflow"]["policy"] == "none" and not hide_draft
+            if hide_draft:
                 self.agent.on_reply = None
         result = self.agent.reply(history[-24:], context=self._context(updated))
         if not isinstance(result.decision, TeachingDecision):
@@ -256,11 +284,18 @@ class FreeformCourseRuntime:
         if not isinstance(self.agent, FreeformCourseAgent) and result.completion is not None:
             self.model_calls.append({"phase": "teaching", "status": "success", "usage": result.completion.usage, "model": result.completion.model})
         decision = result.decision
+        if not blueprint.enabled(updated) and (len(decision.observations) > 4 or decision.next_practice_field is not None or decision.case_options):
+            raise RuntimeError("本课不接受第一课专属教学字段。")
         if decision.interaction is not None and not updated.get("latest_interaction_event", {}).get("judgment"):
             note = interaction.validate(decision.interaction, latest)
             event_result = self._accept_interaction(updated, note, latest, stage_before, result.completion)
             if event_result is not None:
                 return event_result
+        if decision.case_options:
+            if not blueprint.enabled(updated) or stage != "learn" or decision.observations or any(not item or not faithful_excerpt(text, item) for item in decision.case_options):
+                raise RuntimeError("案例选择缺少当前原话依据。")
+            updated["blueprint"]["case_options"] = [{"value": item, "source_message_id": latest["id"]} for item in decision.case_options]
+            return self._result(updated, "您提到了几件事，我们先选一件：\n" + "\n".join(f"{i+1}. {item}" for i,item in enumerate(decision.case_options)) + "\n您想先看哪一件？也可以先不谈。", stage_before, completion=result.completion, action="offer_case_choice")
         if stage == "practice" and boundaries.fictional(updated) and decision.practice_origin != "current_case":
             return self._result(updated, "您刚才说的内容我先保留在对话里，不把它填成虚构人物的经历。我们先不往下追问，当前案例记录也先不改。", stage_before,
                 completion=result.completion, action="case_source_mismatch", case_origin=decision.practice_origin)
@@ -269,13 +304,39 @@ class FreeformCourseRuntime:
         signals = self._validated_signals(decision, latest, before_fields, changed)
         reply = decision.reply
         uncertain = answer_needs_help(text)
-        if stage in {"check_in", "learn"} and decision.advance and accepted and not uncertain:
+        if blueprint.enabled(updated) and stage == "learn":
+            if "situation" in accepted:
+                updated["stage"] = "practice"
+                blueprint.after_turn(updated, None, accepted, latest)
+                reply = "谢谢您分享这件事。已说出的内容会一起整理，不再重复问。" + next_question(updated)
+            else:
+                blueprint.after_turn(updated, focus_before_learn, accepted, latest)
+                if "situation" in updated["practice_flow"]["deferred"]:
+                    updated["stage"] = "practice"
+                    reply = "这一项先留空。" + next_question(updated)
+        elif blueprint.enabled(updated) and stage in {"practice", "review"}:
+            if stage == "practice":
+                blueprint.after_turn(updated, focus_before, accepted, latest)
+            elif blueprint.missing(updated):
+                updated["stage"] = "practice"
+            if updated["stage"] == "review":
+                reply = ("谢谢您分享回看后的想法，这段补充也会保留。请核对右侧记录，准确的话可以确认；想修改也可以直接说。"
+                    if "relationship_note" in accepted and not changed else blueprint.review_text(updated))
+            # Keep the model's natural acknowledgement; show a short, accurate
+            # next-task anchor if its projected question is no longer current.
+            elif accepted or focus_before != practice_flow.current_field(updated):
+                if decision.next_practice_field != practice_flow.current_field(updated):
+                    acknowledgement = "".join(part + "。" for part in reply.split("。")[:-1] if "？" not in part and "?" not in part)[:180]
+                    reply = acknowledgement + next_question(updated)
+            if updated["blueprint"].get("rating_rejection", {}).get("source_message_id") == latest["id"]:
+                reply = "这次评分还没能准确对应到当前想法或情绪，我先不填入，也不会改成其他分数。" + next_question(updated)
+        elif stage in {"check_in", "learn"} and decision.advance and accepted and not uncertain:
             updated["stage"] = "learn" if stage == "check_in" else "practice"
             if stage == "check_in" and updated["carryover"].get("status") == "offered":
                 updated["carryover"] = {"status": "declined"}
             feedback = decision.reply.strip() if len(decision.reply) <= 140 and not any(word in decision.reply for word in ("？", "?", "完成", "确认", "[[")) else ""
             boundaries.ensure(updated)
-            reply = feedback + (next_question(updated) if boundaries.fictional(updated) and updated["stage"] == "practice" else stage_intro(lesson_id, updated["stage"], path=updated.get("path")))
+            reply = feedback + (next_question(updated) if blueprint.enabled(updated) or boundaries.fictional(updated) and updated["stage"] == "practice" else stage_intro(lesson_id, updated["stage"], path=updated.get("path")))
         elif bounded_practice:
             if boundaries.enabled(updated):
                 for field in accepted:
@@ -308,17 +369,33 @@ class FreeformCourseRuntime:
                             reflection_response_applied=reflection_created and (not bounded_practice or boundaries.enabled(updated)))
 
     def _accept_interaction(self, state, note, latest, stage_before, completion=None):
-        if boundaries.apply(state, note, latest):
+        task_action = note.get("task_action", "continue")
+        checking = learning_check.enabled(state) and (state["stage"] == "assessment" or learning_check.retrying(state))
+        personal_intent = note.get("personal_intent", "none")
+        compatible_intent = personal_intent == "none" or task_action == "pause" and personal_intent == "pause"
+        if task_action != "continue" and (state["lesson_id"] != "lesson-1" or note["verdict"] != "feedback" or not compatible_intent):
+            raise ValueError("Task adjustment lacks valid lesson-one feedback")
+        if task_action == "stop_check" and not checking:
+            raise ValueError("Cannot stop a check outside an active check")
+        if task_action == "continue" and boundaries.apply(state, note, latest):
             state["latest_interaction_event"] = {"status": "boundary_handled", "schema_version": boundaries.VERSION}
             return self._result(state, self._safe_reply(note["reply"], state), stage_before, completion=completion, action="boundary_feedback")
         if note["verdict"] != "feedback":
             return None
         response = note["reply"]
-        if state.get("interaction_response_version") == interaction.RESPONSE_VERSION and (note.get("response_type") == "review_current_case" or note["follow_up"] == "stop"):
+        if task_action == "stop_check":
+            learning_check.stop_remaining(state, latest)
+            response = note["reply"]
+            note.update(follow_up="standard", response_type="acknowledge_adjustment")
+        elif task_action == "pause":
+            state["paused"] = True
+            response = "可以，我们先休息，课程已经暂停。之前的记录会保留，想继续时再恢复即可。"
+        elif state.get("interaction_response_version") == interaction.RESPONSE_VERSION and (note.get("response_type") == "review_current_case" or note["follow_up"] == "stop"):
             practice_flow.stop_and_review(state, latest)
             anchor = state.get("draft_record", {}).get("situation", {}).get("value")
             if anchor and anchor not in note["reply"]:
                 response += "\n仍围绕这件事：" + anchor + "。已有记录可在右侧核对或修改。"
+        note.update(applied_action=task_action, effect="not_measured")
         note.update(id=str(uuid.uuid4()), kind="llm_interaction_reflection", schema_version=interaction.VERSION,
                     lesson_id=state["lesson_id"], effect="not_measured", status="active")
         state["latest_interaction_event"] = {"status": "accepted", "memory": note, "response_applied": True}
@@ -344,6 +421,11 @@ class FreeformCourseRuntime:
             event.update(status="failed", error_type=type(exc).__name__, response_applied=False)
             if type(exc) is ValueError:
                 event["validation_reason"] = str(exc)
+            if learning_check.enabled(state) and (state["stage"] == "assessment" or learning_check.retrying(state)):
+                state["paused"] = True
+                event.update(fallback_applied=True, fallback_action="pause_check")
+                return self._result(state, "抱歉，这次没能准确理解您的调整要求。我先暂停出题，已做内容会保留；您可以稍后恢复，或再说明想跳过剩下的题。", stage_before,
+                    action="interaction_feedback_failed")
             disclosure_attempt = boundaries.applicable(state) and (boundaries.candidate(latest.get("content", "")) or state.get("privacy", {}).get("pending") or state.get("privacy", {}).get("recovery"))
             if disclosure_attempt:
                 state.setdefault("privacy", boundaries.new_flow())["recovery"] = True
@@ -362,15 +444,36 @@ class FreeformCourseRuntime:
     def _apply_observations(state, decision, latest, stage):
         lesson_id = state["lesson_id"]
         allowed = {"check_in": {"mood"}, "learn": {"learning_response"}, "practice": set(required_fields(state)), "plan": {"goal"}, "summary": {"feedback"}, "check_feedback": {"feedback"}}.get(stage, set())
+        aligned = blueprint.enabled(state)
+        focus = practice_flow.current_field(state) if aligned and stage == "practice" else None
+        if aligned and stage == "learn":
+            allowed = set(blueprint.FIELDS)
+        elif aligned and stage in {"practice", "review"}:
+            allowed = set(blueprint.FIELDS) | ({"relationship_note"} if stage == "review" else set())
         accepted, changed = [], []
-        for evidence in decision.observations:
+        if aligned:
+            changed_bases = [item.field for item in decision.observations if item.field in {"situation", "thought", "emotion", "behavior"}
+                and state["draft_record"].get(item.field, {}).get("value") != item.value]
+            blueprint.invalidate(state, changed_bases)
+        for evidence in sorted(decision.observations, key=lambda item: item.field in blueprint.RATINGS):
             if evidence.field not in allowed or evidence.source_message_id != latest.get("id") or not faithful_excerpt(latest["content"], evidence.value):
                 raise RuntimeError("课程记录的字段或原话来源无效，本轮进度未改变。")
             if evidence.field in accepted:
                 raise RuntimeError("同一字段不能在一轮中提交多个不同摘录。")
+            if aligned and evidence.field in blueprint.RATINGS:
+                if blueprint.accept_rating(state, evidence, latest, focus):
+                    accepted.append(evidence.field)
+                else:
+                    state["blueprint"]["rating_rejection"] = {"field": evidence.field, "quote": evidence.value, "source_message_id": latest["id"]}
+                continue
+            if aligned and evidence.field == "relationship_note":
+                state["blueprint"]["relationship"] = {"value": evidence.value, "source_message_id": latest["id"],
+                    "source_kind": boundaries.source(state)["kind"], "case_id": state["case_id"]}
+                accepted.append(evidence.field)
+                continue
             value = {"value": evidence.value, "source_message_id": evidence.source_message_id}
             accepted.append(evidence.field)
-            if stage == "practice":
+            if stage == "practice" or aligned and stage in {"learn", "review"}:
                 if state["draft_record"].get(evidence.field, {}).get("value") != evidence.value:
                     changed.append(evidence.field)
                 state["draft_record"][evidence.field] = {**value, "source_kind": boundaries.source(state)["kind"]}
@@ -435,7 +538,7 @@ class FreeformCourseRuntime:
         source_roles = {item.get("id"): item.get("role") for item in scope if item.get("id")}
         if not set(reflection.source_message_ids).issubset(source_roles) or not any(source_roles.get(source) == "learner" for source in reflection.source_message_ids):
             raise RuntimeError("反思没有可验证的学习者消息依据。")
-        allowed_fields = set(required_fields(updated)) | {"mood", "learning_response", "goal", "feedback"}
+        allowed_fields = set(blueprint.FIELDS if blueprint.enabled(updated) else required_fields(updated)) | {"relationship_note", "mood", "learning_response", "goal", "feedback"}
         if reflection.focus_field is not None and reflection.focus_field not in allowed_fields:
             raise RuntimeError("反思指向了当前课程之外的字段。")
         if reflection.strategy not in context["allowed_strategies"] or (reflection.strategy == "clarify_missing_field" and reflection.focus_field not in practice_flow.missing(updated)):
@@ -469,6 +572,13 @@ class FreeformCourseRuntime:
     @staticmethod
     def _control(state: dict, latest: dict, action: str) -> str:
         stage, lesson_id = state["stage"], state["lesson_id"]
+        if action == "edit_learning_goal" and blueprint.enabled(state) and stage in {"plan", "summary", "learning_goal"}:
+            state["blueprint"]["goal_edit_base"] = copy.deepcopy((state.get("learning_goal") or state.get("learning_goal_draft") or {}).get("items", []))
+            state.pop("learning_goal", None)
+            state.pop("learning_goal_draft", None)
+            state["stage"] = "learning_goal"
+            state["practice_plan"] = {"status": "undecided", "text": ""}
+            return "原目标确认已撤回，请说出您希望保留的新目标；课后安排稍后重新核对。"
         if action in practice_flow.CONTROL_LABELS:
             return practice_flow.control(state, latest, action)
         if action in learning_check.CONTROL_LABELS:
@@ -558,6 +668,8 @@ class FreeformCourseRuntime:
             if practice_flow.enabled(state):
                 state["confirmed_record"]["deferred_fields"] = copy.deepcopy(state["practice_flow"]["deferred"])
                 state["confirmed_record"]["practice_scope"] = practice_flow.scope(state)
+            if blueprint.enabled(state):
+                state["confirmed_record"]["blueprint"] = blueprint.payload(state)
             if learning_check.enabled(state):
                 return learning_check.begin(state)
             state["stage"] = "plan"
@@ -593,12 +705,23 @@ class FreeformCourseRuntime:
             self.agent.call_log = self.model_calls
         try:
             result = self.agent.navigate(history[-12:], context={"stage": state["stage"],
-                "learning_goal_draft": state.get("learning_goal_draft"), "practice_plan": state["practice_plan"]})
+                "learning_goal_draft": state.get("learning_goal_draft") or state.get("learning_goal") or {"items": state.get("blueprint", {}).get("goal_edit_base", [])}, "practice_plan": state["practice_plan"],
+                "goal_edit_candidate": blueprint.enabled(state) and bool(re.search(r"第[一二三四五1-5][项个条]|修改.{0,6}目标|调整.{0,6}目标", latest["content"])),
+                "blueprint_goal": state["blueprint"].get("goal_step") if blueprint.enabled(state) else None})
             decision = result.decision
             navigation.validate(decision, state, latest)
             proposed = copy.deepcopy(state)
             if decision.intent == "goal":
-                reply = learning_check.goal_answer(proposed, latest)
+                base_goals = copy.deepcopy((proposed.get("learning_goal") or proposed.get("learning_goal_draft") or {}).get("items", []) or proposed.get("blueprint", {}).get("goal_edit_base", []))
+                if blueprint.enabled(proposed) and proposed["stage"] != "learning_goal":
+                    self._control(proposed, latest, "edit_learning_goal")
+                if blueprint.enabled(proposed) and decision.goal_updates:
+                    if decision.goal_items:
+                        raise ValueError("Cannot replace and update goals in the same decision")
+                    reply = blueprint.revise_goals(proposed, latest, decision.goal_updates, base_goals)
+                else:
+                    reply = (blueprint.goal_answer(proposed, latest, decision.goal_items, decision.goal_level)
+                    if blueprint.enabled(proposed) else learning_check.goal_answer(proposed, latest))
             elif decision.intent == "clarify":
                 reply = decision.reply or "您是想继续当前安排，还是跳过这个可选环节？"
             else:
@@ -616,6 +739,30 @@ class FreeformCourseRuntime:
                 action="course_navigation", navigation_event={"status": "failed", "error_type": type(exc).__name__})
 
     def _result(self, state: dict, reply: str, before: str, *, completion=None, safety=None, **extra) -> TurnResult:
+        if blueprint.enabled(state) and state["stage"] == "review" and not safety and not state.get("paused"):
+            from cbt_course_llm_freeform import case_review
+            fingerprint = case_review.fingerprint(state)
+            recap = state["blueprint"].get("case_review", {})
+            if state["draft_record"] and recap.get("fingerprint") != fingerprint:
+                try:
+                    if self.agent is None:
+                        self.agent = FreeformCourseAgent(system_prompt=prompt_for_lesson("lesson-1"))
+                        self.agent.call_log = self.model_calls
+                    if not isinstance(self.agent, FreeformCourseAgent):
+                        raise RuntimeError("Case recap adapter unavailable")
+                    self.agent.call_log = self.model_calls
+                    output, review_completion = case_review.generate(self.agent, state)
+                    recap = {"status": "ready", "fingerprint": fingerprint, **output}
+                    if completion is None:
+                        completion = review_completion
+                except Exception as exc:
+                    recap = {"status": "failed", "fingerprint": fingerprint, "error_type": type(exc).__name__}
+                    if self.model_calls and self.model_calls[-1].get("phase") == "case_review":
+                        self.model_calls[-1].update(status="error", error_type=type(exc).__name__)
+                state["blueprint"]["case_review"] = recap
+                extra["case_review_event"] = copy.deepcopy(recap)
+                natural = blueprint.review_text(state)
+                reply = reply + "\n" + natural if extra.get("action") in {"interaction_feedback", "interaction_feedback_failed"} else natural
         state["revision"] += 1
         state["turn_count"] += 1
         state["workflow"]["last_model_call_count"] = len(self.model_calls)

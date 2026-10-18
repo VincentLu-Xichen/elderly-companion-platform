@@ -162,6 +162,9 @@ class WorkflowPersistenceTests(unittest.TestCase):
         self.turn(conversation, action="skip_checkin")
         self.turn(conversation, PREVIEW_EXAMPLES[lesson]["learn"])
         result = self.turn(conversation, PREVIEW_EXAMPLES[lesson]["practice"])
+        if lesson == "lesson-1" and result["course"]["current_step"] == "practice":
+            self.turn(conversation, "6分")
+            result = self.turn(conversation, "5分")
         self.assertEqual(result["course"]["current_step"], "review")
         return conversation
 
@@ -221,6 +224,7 @@ class WorkflowPersistenceTests(unittest.TestCase):
         self.assertIsNone(state["confirmed_record"])
         self.assertEqual(state["practice_plan"]["status"], "undecided")
         self.turn(conversation, "心情：担心")
+        self.turn(conversation, "5分")  # Changed emotion invalidates its previous intensity.
         self.turn(conversation, action="confirm_record")
         self.assertEqual(decrypt_json(conversation.agent_state_encrypted)["confirmed_record"]["fields"]["emotion"]["value"], "担心")
 

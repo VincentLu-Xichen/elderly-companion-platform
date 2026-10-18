@@ -12,6 +12,7 @@ class FeedbackAdaptationTests(unittest.TestCase):
     def practice(self):
         state = new_course_state("lesson-1", reflection_policy="none")
         state.pop("privacy")  # These tests retain the historical explicit-button compatibility path.
+        state.pop("blueprint")
         state["stage"] = "practice"
         state["draft_record"]["situation"] = {"value": "今天下雨了", "source_message_id": "s"}
         return state

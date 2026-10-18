@@ -25,6 +25,7 @@ class InteractionReflection(BaseModel):
     personal_intent: Literal["none", "refuse_personal", "refuse_field", "unclear", "confirm_all", "local_only", "allow_all", "use_personal_once", "pause"] = "none"
     response_type: Literal["acknowledge_adjustment", "review_current_case", "neutral"] = "neutral"
     tone: Literal["standard", "polite"] = "standard"
+    task_action: Literal["continue", "stop_check", "pause"] = "continue"
 
 
 STYLE_PROMPT = """你是课程互动反馈的审慎复盘器。只判读最新learner是否在抱怨Agent的讲法、追问或推进，不从普通情绪、转述或否定推出反馈。
@@ -61,10 +62,10 @@ local_only仅表示已有确认问题后没有明确长期同意，或用户明�
 """.strip()
 
 
-def candidate(text: str) -> bool:
+def candidate(text: str, *, task_feedback=False) -> bool:
     # High recall on interaction expressions, including negated/reported ones:
     # the model, not this rule, must decide whom the expression refers to.
-    return bool(re.search(r"追问|审问|一直问|一直让.{0,4}解释|问来问去|别.{0,2}问|不要.{0,3}问|少问|少解释|解释太多|解释太快|解释太长|说重点|啰嗦|太啰唆|说.{0,3}太长|讲.{0,3}太长|回复.{0,3}太长|讲简单|说简单|烦不烦|你.{0,6}烦|别.{0,3}解释|我想少解释|详细.{0,3}解释|讲详细|你.{0,5}没.{0,3}听|别打断|不想聊这个|听不下去|受不了你", text))
+    return bool(re.search(r"追问|审问|一直问|一直让.{0,4}解释|问来问去|别.{0,2}问|不要.{0,3}问|少问|少解释|解释太多|解释太快|解释太长|说重点|啰嗦|太啰唆|说.{0,3}太长|讲.{0,3}太长|回复.{0,3}太长|讲简单|说简单|烦不烦|你.{0,6}烦|别.{0,3}解释|我想少解释|详细.{0,3}解释|讲详细|你.{0,5}没.{0,3}听|别打断|不想聊这个|听不下去|受不了你", text)) or bool(task_feedback and re.search(r"题.{0,4}太多|这么多题|不想.{0,8}(?:做|答|练|继续)|不做.{0,5}题|剩下.{0,6}(?:跳过|不做)|先休息|暂停", text))
 
 
 def validate(decision: InteractionReflection, latest: dict) -> dict:

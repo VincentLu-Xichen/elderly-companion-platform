@@ -213,7 +213,7 @@ class FreeformServiceTest(unittest.TestCase):
         self.assertTrue(resumed)
         self.assertEqual(same.id, conversation.id)
         self.assertEqual(conversation.agent_version, AGENT_VERSION)
-        self.assertIn("6.8-stop-probing", conversation.active_course_key)
+        self.assertIn("7.1-feedback-review", conversation.active_course_key)
         self.assertIsNone(conversation.scenario_snapshot_encrypted)
 
         conversation.agent_version = "course-v1"

@@ -211,6 +211,10 @@ COOKIE_SECURE=false
 
 ## 10. 对话清空后的恢复流程
 
+最新为[015](specs/015-feedback-and-review/implementation.md)：第一课7.1-feedback-review恢复检验阶段突发反馈处理，新增合法stop_check/pause动作及判题漏检反馈出口，原独立加密记忆复用；case_review.py单次来源化LLM自然回顾，原话不改，案例内容指纹缓存。课末固定LLM/结构化反思继续，未自动跨课采用。014内容蓝图保留；其他课教学Prompt逐字一致。新隔离8014，恢复先检查。以下为历史。
+
+最新为 [014](specs/014-lesson1-blueprint/spec.md)：第一课7.0-blueprint-aligned，恢复同例教学、两项0—10评分、模型/关系回顾、逐题反馈、多项整套课程目标。评分在blueprint状态独立于四要素原话，修改对象后失效；目标草稿/确认与授权来源可追溯。保留拒绝、同例停问、流式和独立Reflexion。第二至八课Prompt须与af0605d逐字一致，不扩展其字段白名单；无新表迁移。014规格/报告为当前恢复入口，以下为历史。
+
 最新 [013](specs/013-stop-probing/implementation.md)：第一课 `6.8-stop-probing`，新状态 `interaction_response_version=interaction-response/2`。风格投诉使用Style Prompt，与个人边界候选分流；response_type/tone/follow_up=stop进入兼容记忆。明确追问投诉保留同一case_id/原字段，未收集项留空转待核对，不能自动本人确认或当能力差；失败保留审计、不设隐私recovery。新版隐藏常驻逐项按钮；`practice_origin`拒绝其他故事填虚构案例。无增量的程序回复保存后前端渐显，不额外调用LLM、不伪称实时生成。176项回归与有限模型检查通过，用户体验待验收；新体验8011，8010旧服务保留，恢复先检查。以下012为此前增量。
 
 最新 [012](specs/012-course-navigation/implementation.md)：第一课 `6.7-course-navigation`，末尾 learning_goal/plan/summary 的普通聊天一次非流式 LLM 导航判断，阶段 Prompt 分开，白名单最多两动作，逐动作本轮消息依据，副本全部校验后采用。含糊完成不作目标或同意；finish 仅本轮开始已在 summary。按钮继续零调用；独立检验与记录确认不受影响。输入立即清空，保留失败原请求及新草稿；虚构暂留文案区分来源。170 项离线回归与有限真实模型验证，用户体验待验收。最终隔离服务 8010，恢复先核对运行状态。下段为此前增量。

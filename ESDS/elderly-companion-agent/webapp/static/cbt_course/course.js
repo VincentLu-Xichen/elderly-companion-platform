@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
       record.append(row);
     });
     (course.personal_practice?.deferred || []).forEach((field) => {
+      if (course.blueprint?.source_kind === "fictional" && ["thought_belief", "emotion_intensity"].includes(field.field)) return;
       const row = courseElement("div", "", "notebook-muted");
       row.append(courseElement("dt", field.label), courseElement("dd", field.status_label));
       record.append(row);
@@ -206,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
       checkCard.append(courseElement("p", check.retrying ? "新案例补练 · 首次回答仍保留" : "换个例子试一试", "notebook-kicker"),
         courseElement("p", check.story, "learning-check-story"),
         courseElement("h2", `第 ${check.number} / ${check.total} 题：${check.question}`),
-        courseElement("p", "故事可以反复阅读。需要概念提示或想跳过时，请使用下方按钮。", "notebook-muted"));
+            courseElement("p", "故事可以反复阅读。可以用下方操作，也可以直接说需要提示、不想继续这些题，或想暂停。", "notebook-muted"));
     }
     const checkResults = document.getElementById("course-check-results");
     checkResults.replaceChildren();
@@ -219,12 +220,41 @@ document.addEventListener("DOMContentLoaded", () => {
         group.append(courseElement("summary", title));
         attempts.forEach((item) => {
           const row = courseElement("div", "", "learning-check-result");
-          row.append(courseElement("strong", `${item.label} · ${item.verdict_label}`), courseElement("p", `我的回答：${item.answer || "这题先跳过"}`),
+          row.append(courseElement("strong", `${item.label} · ${item.verdict_label}`), courseElement("p", item.answer ? `我的回答：${item.answer}` : "本题未作答"),
             courseElement("p", item.help_label, "notebook-muted"), courseElement("p", item.reason, "notebook-muted"));
           group.append(row);
         });
         checkResults.append(group);
       });
+    }
+    const model = document.getElementById("course-blueprint-model");
+    if (model) {
+      model.replaceChildren();
+      model.hidden = !course.blueprint || !["practice", "review", "assessment", "check_feedback", "learning_goal", "plan", "summary", "completed"].includes(course.current_step);
+      if (!model.hidden) {
+        model.append(courseElement("h3", course.blueprint.source_kind === "fictional" ? "虚构案例的认知行为模型" : "这件事的认知行为模型"));
+        const diagram = courseElement("div", "", "blueprint-model");
+        const values = Object.fromEntries((course.record || []).map(item => [item.field, item.value]));
+        [["situation", "情境"], ["thought", "想法"], ["emotion", "情绪"], ["behavior", "行为"]].forEach(([field, label], i) => {
+          if (i) diagram.append(courseElement("span", i === 1 ? "↓ 解读" : i === 2 ? "↙↗　↘↖" : "↔", `blueprint-arrow blueprint-arrow-${i}`));
+          const node = courseElement("div", "", `blueprint-node blueprint-${field}`);
+          node.append(courseElement("strong", label), courseElement("p", values[field] || "暂未记录"));
+          const rating = course.blueprint.ratings[field === "thought" ? "thought_belief" : field === "emotion" ? "emotion_intensity" : ""];
+          if (["thought", "emotion"].includes(field) && (rating || course.blueprint.source_kind !== "fictional")) node.append(courseElement("p", `${field === "thought" ? "相信程度" : "情绪强度"}：${rating ? `${rating.value}/10` : "未提供"}`, "notebook-muted"));
+          diagram.append(node);
+        });
+        model.append(diagram, courseElement("p", course.blueprint.relations, "notebook-muted"));
+        const concepts = courseElement("details", "", "blueprint-concepts");
+        concepts.append(courseElement("summary", "回看四个概念与示例"));
+        course.blueprint.concepts.forEach(text => concepts.append(courseElement("p", text)));
+        (course.blueprint.materials || []).forEach(material => {
+          const image = courseElement("img", "");
+          image.src = material.src; image.alt = material.alt; image.loading = "lazy";
+          concepts.append(image);
+        });
+        model.append(concepts);
+        if (course.blueprint.relationship) model.append(courseElement("p", `回看后的补充：${course.blueprint.relationship.value}`));
+      }
     }
     const learningGoal = document.getElementById("course-learning-goal");
     learningGoal.replaceChildren();
@@ -232,6 +262,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!learningGoal.hidden) learningGoal.append(courseElement("h3", "我的练习目标"),
       courseElement("p", course.learning_goal.status === "skipped" ? "本次暂不设置目标。" : course.learning_goal.value),
       courseElement("p", course.learning_goal.status === "draft" ? "待您核对确认，可以直接修改。" : "已保存您的选择。", "notebook-muted"));
+    if (!learningGoal.hidden && course.learning_goal.items?.length) {
+      const list = courseElement("ol", "");
+      course.learning_goal.items.forEach(item => list.append(courseElement("li", item.value)));
+      learningGoal.replaceChildren(courseElement("h3", "整套课程的具体目标"), list,
+        courseElement("p", course.learning_goal.status === "draft" ? "待本人确认，可以修改；目标不是效果承诺。" : "已按本人确认保存，之后也可修改。", "notebook-muted"));
+    }
     const evidence = document.getElementById("course-learning-evidence");
     evidence.replaceChildren();
     evidence.hidden = !course.completed;
@@ -241,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const actions = document.getElementById("course-actions");
     actions.replaceChildren();
     if (!blocked) {
-      if (course.current_step === "check_in") button("先看例子，不评分", "skip_checkin", actions);
+      if (course.current_step === "check_in") button(course.blueprint ? "开始本课，暂不评分" : "先看例子，不评分", "skip_checkin", actions);
       if (course.can_reuse_case) button("沿用上一课这件事", "reuse_case", actions);
       if (course.current_step === "review") {
         button(fictional ? "确认练习记录" : "确认这份记录", "confirm_record", actions).disabled = busy || (course.pattern_required && !course.pattern_review);
@@ -257,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (check.can_retry) button("换个例子再练一次", "start_check_retry", actions);
       }
       if (course.current_step === "learning_goal") {
-        if (course.learning_goal?.status === "draft") button("确认这个目标", "confirm_learning_goal", actions);
+        if (course.learning_goal?.status === "draft") button(course.blueprint ? "确认这些目标" : "确认这个目标", "confirm_learning_goal", actions);
         button("暂不设置目标", "skip_learning_goal", actions);
       }
       if (course.current_step === "plan") {
@@ -266,6 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (course.current_step === "summary") button("完成本课", "finish", actions);
       if (["plan", "summary"].includes(course.current_step)) button("修改已确认的记录", "edit_record", actions);
+      if (course.blueprint && ["plan", "summary"].includes(course.current_step)) button("修改课程目标", "edit_learning_goal", actions);
     }
     const reflection = document.getElementById("course-reflection");
     reflection.replaceChildren();

@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from cbt_course_llm_freeform.catalog import lesson_version
 from cbt_course_llm_freeform.design import FIELD_LABELS, PATHS, PREDECESSORS, path_spec, required_fields
 from cbt_course_llm_freeform.runtime import IMPLEMENTATION
 from cbt_course_llm_freeform import practice_flow
-from webapp.models import Conversation
-from webapp.security import decrypt_json
+from webapp.models import Conversation, Message
+from webapp.security import decrypt_json, decrypt_text
 
 
 def _summary(source: Conversation, participant_id: str, agent_version: str, target_lesson: str = "lesson-2") -> dict | None:
@@ -23,6 +23,19 @@ def _summary(source: Conversation, participant_id: str, agent_version: str, targ
         return None
     if (source.lesson_id in PATHS and not path_spec(state)) or not practice_flow.confirmed_ready(state, record):
         return None
+    # Goals are only supplementary. Missing/deleted goal evidence removes goals,
+    # without inventing permission or making the confirmed case unreadable.
+    goals = []
+    goal = state.get("learning_goal", {})
+    if goal.get("status") == "confirmed":
+        session = object_session(source)
+        ids = {item.get("source_message_id") for item in goal.get("items", [])} | {goal.get("confirmation_message_id")}
+        messages = {item.id: item for item in session.scalars(select(Message).where(Message.conversation_id == source.id, Message.id.in_(ids), Message.role == "learner"))} if session else {}
+        if goal.get("confirmation_message_id") in messages:
+            goals = [{"value": item["value"][:180], "truncated": len(item["value"]) > 180,
+                "source_message_id": item["source_message_id"], "confirmation_message_id": goal["confirmation_message_id"]}
+                for item in goal.get("items", []) if item.get("source_message_id") in messages
+                and item["value"] in decrypt_text(messages[item["source_message_id"]].content_encrypted)]
     return {"lesson_id": source.lesson_id, "lesson_version": source.lesson_version,
             "artifact_kind": (state.get("artifact") or {}).get("kind", "learning_record"),
             "application_status": (state.get("artifact") or {}).get("application_status", "not_measured"),
@@ -31,7 +44,8 @@ def _summary(source: Conversation, participant_id: str, agent_version: str, targ
             "record": record["fields"], "record_order": list(required_fields(state)),
             "deferred_fields": record.get("deferred_fields", {}), "practice_scope": record.get("practice_scope"),
             "record_labels": {key: FIELD_LABELS[key] for key in required_fields(state)},
-            "practice_plan": state.get("practice_plan", {}), "learning_evidence": state.get("learning_evidence", [])}
+            "practice_plan": state.get("practice_plan", {}), "learning_evidence": state.get("learning_evidence", []),
+            "course_goals": goals}
 
 
 REVIEW_FIELDS = {"lesson-1": ("thought", "behavior"), "lesson-2": ("situation", "thought"),

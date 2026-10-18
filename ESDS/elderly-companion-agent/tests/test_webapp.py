@@ -340,6 +340,8 @@ class WebAppApiFlowTest(unittest.TestCase):
             turn(first, action="skip_checkin")
             turn(first, "这句是想法，失落是心情。")
             record = turn(first, "事情：女儿没有回电话；想法：她是不是不在乎我；心情：失落；做法：没有再联系")
+            turn(first, "6分")
+            record = turn(first, "5分")
             self.assertEqual(record["course"]["current_step"], "review")
             self.assertFalse(record["course"]["record_confirmed"])
             denied = client.post(f"/api/cbt-course/conversations/{first}/messages", json={"action": "confirm_record", "expected_revision": 0, "idempotency_key": uuid.uuid4().hex}, headers=headers)

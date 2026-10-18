@@ -1,5 +1,9 @@
 # 八课：结构化记录与可配置反馈工作流
 
+最新为[015报告](../specs/015-feedback-and-review/implementation.md)：第一课7.1，检验反馈也经过原事件Reflexion或判题漏检出口，程序采用停止本组题/暂停等动作；案例回顾由有来源的LLM概括，原话保留。每课固定课末Reflexion继续，未自动跨课采用。其他课版本/教学Prompt不变；下文014为内容基线。
+
+最新为 [014 老师蓝图对齐](../specs/014-lesson1-blueprint/spec.md)：第一课 `7.0-blueprint-aligned`，`blueprint.py` 承载同例教学、两项有来源评分、模型与关系回顾、一至五项目标。四题恢复原场景与逐题反馈，记录反馈暴露；延续拒绝、同例停问、独立记忆和自然语言导航。第二至八课完整 Prompt 与 6.8 阶段逐字一致，版本不变；无新增数据库迁移。以下为历史增量。
+
 最新为 [013](../specs/013-stop-probing/implementation.md)：第一课 `6.8-stop-probing`。新增 `interaction-response/2` 状态标记，结构化 type/tone/stop 区分讲法反馈与个人案例拒绝；前者同例停问待核对，失败不进入隐私recovery。新版隐藏逐项按钮，程序回复保存后前端渐显；`practice_origin` 防止其他故事填入当前虚构记录。176项回归与有限模型/页面验证，用户体验待反馈。其他课版本不变，无新数据库迁移；旧记录可选字段默认兼容。以下012为此前增量。
 
 当前最新为 [012](../specs/012-course-navigation/implementation.md)：第一课 `6.7-course-navigation`，新增 `navigation.py` 的阶段专用判读和有限动作校验，目标/课后安排/总结可用自然语言推进；按钮仍可用。虚构暂留文案区分辨认与个人回忆，输入框立即清空并保留重试和新草稿。170 项离线回归及有限真实模型/浏览器验证完成，用户体验待验收。以下 011/010 为此前增量。

@@ -14,13 +14,13 @@ class CourseMessageCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     content: str = Field(default="", max_length=2000)
     idempotency_key: str = Field(min_length=8, max_length=80)
-    action: Literal["chat", "skip_checkin", "confirm_record", "edit_record", "accept_practice", "decline_practice", "finish", "pause", "resume", "accept_carryover", "decline_carryover", "reuse_case", "accept_pattern", "reject_pattern", "unsure_pattern", "no_pattern", "choose_activation", "choose_exposure", "choose_sleep", "choose_relaxation", "change_path", "request_check_hint", "skip_check_question", "continue_after_check", "start_check_retry", "finish_check_retry", "confirm_learning_goal", "skip_learning_goal", "defer_practice_field", "decline_practice_field", "request_less_probing", "show_brief_explanation", "continue_practice_dialogue"] = "chat"
+    action: Literal["chat", "edit_learning_goal", "skip_checkin", "confirm_record", "edit_record", "accept_practice", "decline_practice", "finish", "pause", "resume", "accept_carryover", "decline_carryover", "reuse_case", "accept_pattern", "reject_pattern", "unsure_pattern", "no_pattern", "choose_activation", "choose_exposure", "choose_sleep", "choose_relaxation", "change_path", "request_check_hint", "skip_check_question", "continue_after_check", "start_check_retry", "finish_check_retry", "confirm_learning_goal", "skip_learning_goal", "defer_practice_field", "decline_practice_field", "request_less_probing", "show_brief_explanation", "continue_practice_dialogue"] = "chat"
     expected_revision: int | None = Field(default=None, ge=0)
 
 
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    field: Literal["mood", "learning_response", "situation", "thought", "emotion", "behavior", "awareness_note", "goal", "feedback",
+    field: Literal["thought_belief", "emotion_intensity", "relationship_note", "mood", "learning_response", "situation", "thought", "emotion", "behavior", "awareness_note", "goal", "feedback",
         "action_fit", "alternative_action", "safety_note", "activity_goal", "first_step", "when_where", "barrier_plan", "feared_prediction", "graded_steps",
         "evidence_for", "evidence_against", "balanced_thought", "next_step", "sleep_pattern", "sleep_habit", "stress_cue", "relax_method",
         "early_signal", "helpful_skill", "response_plan", "support_plan", "review_plan"]
@@ -54,12 +54,14 @@ class PatternCandidate(BaseModel):
 class TeachingDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     reply: str = Field(min_length=1, max_length=1200)
-    observations: list[Evidence] = Field(default_factory=list, max_length=4)
+    observations: list[Evidence] = Field(default_factory=list, max_length=8)
     advance: bool = False
     assessment: TurnAssessment = Field(default_factory=TurnAssessment)
     domain_candidates: list[PatternCandidate] = Field(default_factory=list, max_length=1)
     interaction: InteractionReflection | None = None
     practice_origin: Literal["current_case", "personal_account", "different_case", "unclear"] = "current_case"
+    next_practice_field: Literal["situation", "thought", "thought_belief", "emotion", "emotion_intensity", "behavior"] | None = None
+    case_options: list[str] = Field(default_factory=list, max_length=5)
 
 
 class GuidanceReflection(BaseModel):
@@ -108,9 +110,16 @@ class LearningHypothesis(BaseModel):
 
 class CheckAnswerDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    verdict: Literal["matches", "partial", "does_not_match", "unclear", "needs_help"]
+    verdict: Literal["matches", "partial", "does_not_match", "unclear", "needs_help", "not_answer"]
     reason: str = Field(min_length=1, max_length=180)
     source_message_id: str = Field(min_length=1, max_length=80)
+    interaction: InteractionReflection | None = None
+
+
+class CaseReviewDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    summary: str = Field(min_length=1, max_length=300)
+    source_message_ids: list[str] = Field(min_length=1, max_length=8)
 
 
 @dataclass(frozen=True)

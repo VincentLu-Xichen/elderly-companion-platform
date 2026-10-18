@@ -287,3 +287,12 @@ body[data-course-page] {
   .guided-course .conversation-composer-meta > span:first-child { display: none; }
   .guided-course .conversation-composer-meta { grid-template-columns: 1fr auto; }
 }
+.blueprint-model { display: grid; grid-template-columns: minmax(0, 1fr) 1.4rem minmax(0, 1fr); gap: .4rem; min-width: 0; align-items: center; }
+.blueprint-node { border: 1px solid #759182; border-radius: .6rem; padding: .7rem; overflow-wrap: anywhere; }
+.blueprint-node p { margin: .4rem 0 0; }
+.blueprint-arrow { text-align: center; color: #285441; }
+.blueprint-situation, .blueprint-thought, .blueprint-arrow-1, .blueprint-arrow-2 { grid-column: 1 / -1; }
+.blueprint-emotion { grid-column: 1; }
+.blueprint-arrow-3 { grid-column: 2; }
+.blueprint-behavior { grid-column: 3; }
+.blueprint-concepts img { max-width: 100%; height: auto; }

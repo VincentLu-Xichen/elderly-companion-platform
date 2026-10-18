@@ -4,7 +4,7 @@ from typing import Any
 
 
 LESSON_1_ID = "lesson-1"
-LESSON_1_VERSION = "6.8-stop-probing"
+LESSON_1_VERSION = "7.1-feedback-review"
 LESSON_2_ID = "lesson-2"
 LESSON_2_VERSION = "5.1-interaction-memory"
 LESSON_3_ID = "lesson-3"
@@ -13,7 +13,7 @@ LESSON_VERSIONS = {"lesson-1": LESSON_1_VERSION, "lesson-2": LESSON_2_VERSION, "
                    **{f"lesson-{number}": "1.1-interaction-memory" for number in range(4, 9)}}
 
 _COURSES = [
-    ("认知行为三角", "先看示范、整理自己的经历，再用四道新案例题回看理解。", "引导练习 · 四题检验 · 学习结果与反思"),
+    ("认知行为三角", "围绕一件困扰学习四要素，回看认知行为模型，再辨认练习并制定课程目标。", "同例教学 · 两项评分 · 模型回顾与课程目标"),
     ("看见情境、想法和心情", "通过自然对话区分发生的事、脑中的想法和心情，完成一次三栏记录。", "生活例子 · 本人确认的三栏记录"),
     ("看见想法中的习惯", "区分已知信息与推断，尝试辨认思维习惯；可以保留不确定。", "辨认线索 · 本人核对解释"),
     ("相反行为", "看见情绪推动的做法，判断是否有帮助，再考虑可行的替代回应。", "检查做法 · 尊重边界的小步行动"),

@@ -42,6 +42,7 @@ def turn(state, text="", action="chat", agent=None, message_id=None):
 class PracticeFlowTests(unittest.TestCase):
     def practice(self):
         state = new_course_state("lesson-1", reflection_policy="none")
+        state.pop("blueprint")  # Explicit historical four-field fixture.
         state["stage"] = "practice"
         return state
 
@@ -169,6 +170,8 @@ class PracticeFlowPersistenceTests(unittest.TestCase):
                 self.assertEqual(decrypt_json(conversation.agent_state_encrypted), before)
                 self.assertNotIn("今天下雨", conversation.agent_state_encrypted)
                 send("心情：有点失望；做法：回家看书")
+                send(action="defer_practice_field")
+                send(action="defer_practice_field")
                 send(action="confirm_record")
                 for _ in range(4): send(action="skip_check_question")
                 for action in ("continue_after_check", "skip_learning_goal", "decline_practice", "finish"): send(action=action)

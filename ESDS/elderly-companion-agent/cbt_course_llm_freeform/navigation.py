@@ -27,19 +27,33 @@ class RequestedAction(BaseModel):
     quote: str = Field(min_length=1, max_length=500)
 
 
+class GoalUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    index: int = Field(ge=1, le=5)
+    value: str = Field(min_length=1, max_length=500)
+
+
 class NavigationDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     intent: Literal["goal", "actions", "clarify"]
     actions: list[RequestedAction] = Field(default_factory=list, max_length=2)
     reply: str = Field(default="", max_length=500)
+    goal_items: list[str] = Field(default_factory=list, max_length=10)
+    goal_level: Literal["direction", "concrete"] = "concrete"
+    goal_updates: list[GoalUpdate] = Field(default_factory=list, max_length=5)
 
 
 
 
 
 def validate(decision, state, latest):
+    if decision.intent != "goal" and (decision.goal_items or decision.goal_updates):
+        raise ValueError("Goal data does not match navigation intent")
+    if decision.intent == "clarify" and any(word in decision.reply for word in ("已记录", "已经记录", "已修改", "已经修改", "已保存", "已确认", "改好了", "记下了")):
+        raise ValueError("Clarification cannot claim an unperformed update")
     if decision.intent != "actions":
-        if decision.actions or (decision.intent == "goal" and state["stage"] != "learning_goal"):
+        from cbt_course_llm_freeform import blueprint
+        if decision.actions or (decision.intent == "goal" and state["stage"] != "learning_goal" and not (blueprint.enabled(state) and state["stage"] in {"plan", "summary"})):
             raise ValueError("Navigation intent does not match stage")
         return
     if not decision.actions:

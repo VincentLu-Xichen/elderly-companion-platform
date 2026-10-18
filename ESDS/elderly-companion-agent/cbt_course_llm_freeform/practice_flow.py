@@ -69,6 +69,9 @@ def enabled(state):
 
 
 def missing(state):
+    from cbt_course_llm_freeform import blueprint
+    if blueprint.enabled(state):
+        return blueprint.missing(state)
     deferred = state.get("practice_flow", {}).get("deferred", {}) if enabled(state) else {}
     return [key for key in required_fields(state) if key not in state["draft_record"] and key not in deferred]
 
@@ -86,7 +89,9 @@ def confirmed_ready(state, record):
     if not enabled(state):
         return all(key in fields for key in required_fields(state))
     deferred = record.get("deferred_fields", {})
-    if set(fields) & set(deferred) or not set(deferred).issubset(required_fields(state)):
+    from cbt_course_llm_freeform import blueprint
+    allowed = blueprint.FIELDS if blueprint.enabled(state) else required_fields(state)
+    if set(fields) & set(deferred) or not set(deferred).issubset(allowed):
         return False
     return all(key in fields or (key in deferred and deferred[key].get("status") in STATUS_LABELS
                and bool(deferred[key].get("source_message_ids"))) for key in required_fields(state))
@@ -96,6 +101,15 @@ def stage_focus(state):
     if not enabled(state) or state.get("completed"):
         return None
     task, purpose, exit_text = FOCUS[state["stage"]]
+    from cbt_course_llm_freeform import blueprint
+    if blueprint.enabled(state):
+        task, purpose, exit_text = {
+            "learn": ("选择一件愿意分析的困扰", "在同一件事中逐步学习认知行为模型。", "可选择真实经历或使用虚构案例。"),
+            "practice": ("同例学习情境、想法、情绪与行为", "记录两项本人评分，不替您猜测。", "每项可暂留，已表达的不重复问。"),
+            "review": ("回看认知行为模型与相互影响", "具体联系由您核对，不预设因果循环。", "可分享新看法、修改或确认。"),
+            "assessment": ("用原场景练习四要素辨认", "每题反馈，保留作答与帮助过程。", "四题后汇总，也可跳题。"),
+            "learning_goal": ("形成整套课程的具体目标", "从改善方向到愿意做到的具体事情。", "核对一至五项目标，也可暂不设。"),
+        }.get(state["stage"], (task, purpose, exit_text))
     from cbt_course_llm_freeform import boundaries
     if boundaries.fictional(state) and state["stage"] in {"practice", "review"}:
         return {"task": "辨认虚构案例中的四部分" if state["stage"] == "practice" else "核对案例练习记录",
@@ -110,7 +124,7 @@ def payload(state):
         return None
     field = current_field(state) if state["stage"] == "practice" else None
     return {"current_field": field, "current_label": FIELD_LABELS.get(field),
-            "deferred": [{"field": key, "label": FIELD_LABELS[key], "status_label": status_label(state, item["status"]), **item}
+            "deferred": [{"field": key, "label": FIELD_LABELS[key], "status_label": "材料未提供，不要求评分" if item.get("reason") == "虚构材料未提供评分，不代角色猜测。" else status_label(state, item["status"]), **item}
                          for key, item in state["practice_flow"]["deferred"].items()],
             "unanswered_count": len(state["practice_flow"]["unanswered"].get(field, []))}
 
@@ -162,7 +176,7 @@ def explicit_action(text):
     cleaned = text.strip().rstrip("。.!！")
     if cleaned in {"暂时想不起", "想不起来", "我想不起来", "暂时想不起来", "这一项还分不清", CONTROL_LABELS["defer_practice_field"]}:
         return "defer_practice_field"
-    if cleaned in {"这一项不想回答", "这项先不谈", "先跳过这一项", CONTROL_LABELS["decline_practice_field"]}:
+    if cleaned in {"暂不评分", "先不评分", "这一项不想回答", "这项先不谈", "先跳过这一项", CONTROL_LABELS["decline_practice_field"]}:
         return "decline_practice_field"
     return None
 
@@ -213,6 +227,9 @@ def update(state, focus_before, accepted, latest):
 
 
 def reply(state):
+    from cbt_course_llm_freeform import blueprint
+    if blueprint.enabled(state):
+        return blueprint.instruction(state)
     if state["stage"] == "review":
         lines = ["这次先整理到这里。请一起核对已记录的原话和暂留项："]
         for key in required_fields(state):

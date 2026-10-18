@@ -4,6 +4,7 @@ from __future__ import annotations
 STAGES = ("check_in", "learn", "practice", "review", "plan", "summary")
 STAGE_LABELS = dict(zip(STAGES, ("近况与回顾", "一起看个例子", "试试自己的经历", "核对学习记录", "选择课后安排", "回顾本课收获")))
 FIELD_LABELS = {
+    "thought_belief": "对想法的相信程度", "emotion_intensity": "情绪强度", "relationship_note": "回看后的想法",
     "mood": "最近的状态", "learning_response": "示例中的回答",
     "situation": "发生的事情", "thought": "当时的想法", "emotion": "当时的心情",
     "behavior": "当时的做法", "goal": "希望练习的方向", "feedback": "本人的课后反馈",
@@ -74,7 +75,7 @@ PATTERN_CHOICES = {"accepted": "这次像这种情况", "rejected": "这个解�
 MODEL_TOKEN_LIMITS = {f"lesson-{number}": 1200 for number in range(1, 9)}
 MODEL_TOKEN_LIMITS["lesson-2"] = 900
 PREVIEW_EXAMPLES = {
-    "lesson-1": {"learn": "‘今天买不到想要的菜了’是小周的想法，是他对摊位没开的判断。", "practice": "事情：女儿昨晚没有回电话；想法：她是不是不在乎我；心情：有些失落；做法：我没有再打电话"},
+    "lesson-1": {"learn": "昨晚女儿没有回电话，我想分析这一件事。", "practice": "事情：女儿昨晚没有回电话；想法：她是不是不在乎我；相信程度：6分；心情：有些失落；情绪强度：5分；做法：我没有再打电话"},
     "lesson-2": {"learn": "一个可能失落，另一个可能平静，因为想法不同。", "practice": "事情：女儿昨晚没有回电话；想法：她肯定不在乎我；心情：有些失落"},
     "lesson-3": {"learn": "肯定嫌我烦是在猜测别人的想法，目前还不知道。", "practice": "事情：女儿昨晚没有回电话；想法：她肯定不在乎我；心情：有些失落；线索：我还没有问过她，所以只是猜测"},
 }
@@ -153,6 +154,11 @@ def preview_examples(state: dict) -> dict:
         labels = {label: field for field, label in INPUT_LABELS.items()}
         examples["practice"] = "；".join(part for part in examples["practice"].split("；") if labels.get(part.split("：")[0]) not in state["draft_record"])
     from cbt_course_llm_freeform import learning_check
+    from cbt_course_llm_freeform import blueprint
+    if blueprint.enabled(state) and state["stage"] == "practice":
+        focus = next(iter(blueprint.missing(state)), None)
+        if focus in blueprint.RATINGS:
+            examples["practice"] = "6分"
     if learning_check.enabled(state):
         examples["learning_goal"] = "我希望等家人回复时，先分清发生的事情和自己的猜测。"
         if state["stage"] == "assessment" or learning_check.retrying(state):

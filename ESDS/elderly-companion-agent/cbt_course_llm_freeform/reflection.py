@@ -67,6 +67,13 @@ def generate_course_reflection(conversation_id: str, *, session_factory=None, cl
                 if position is not None and position > 0:
                     references.add(history[position - 1]["id"])
             if enhanced:
+                aligned = state.get("blueprint", {})
+                references.update(item.get("source_message_id") for item in aligned.get("ratings", {}).values())
+                if aligned.get("relationship"):
+                    references.add(aligned["relationship"]["source_message_id"])
+                references.update(item.get("source_message_id") for item in state.get("learning_goal", {}).get("items", []))
+                if state.get("learning_goal", {}).get("confirmation_message_id"):
+                    references.add(state["learning_goal"]["confirmation_message_id"])
                 for check_attempt in (state["learning_check"], state["learning_check"]["retry"]):
                     references.update(item["source_message_id"] for item in check_attempt["answers"])
                 references.update(item.get("source_message_id") for item in (state.get("confirmed_record") or {}).get("fields", {}).values())
@@ -82,7 +89,7 @@ def generate_course_reflection(conversation_id: str, *, session_factory=None, cl
             if data["practice_source"]["kind"] == "fictional":
                 data["source_notice"] = "本课练习来自虚构案例。用户回答是辨认表现，不是其生活经历；不能形成用户心理或个人生活结论。"
             if enhanced:
-                data.update(learning_result=state.get("learning_result"), learner_record=state.get("confirmed_record"), learning_goal=state.get("learning_goal"))
+                data.update(learning_result=state.get("learning_result"), learner_record=state.get("confirmed_record"), learning_goal=state.get("learning_goal"), blueprint=state.get("blueprint"))
             model_client = client or FreeformCourseAgent._client_from_env()
             completion = model_client.complete_with_metadata([
                 {"role": "system", "content": prompt},

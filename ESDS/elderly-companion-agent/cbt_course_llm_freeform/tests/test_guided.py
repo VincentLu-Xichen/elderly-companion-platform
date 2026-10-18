@@ -44,6 +44,7 @@ class GuidedRuntimeTests(unittest.TestCase):
         from cbt_course_llm_freeform.design import LESSON_1_GUIDED_EXAMPLE, LESSON_1_DEMONSTRATION
         from cbt_course_llm_freeform.learning_check import STORY_A, STORY_B
         state = new_course_state("lesson-1", reflection_policy="none")
+        state.pop("blueprint")  # Historical 6.x example-first path remains readable/testable.
         intro = FreeformCourseRuntime().process(state, [{"id": "start", "role": "learner", "content": "先看例子"}], action="skip_checkin")
         self.assertIn(LESSON_1_DEMONSTRATION, intro.reply)
         self.assertIn(LESSON_1_GUIDED_EXAMPLE["question"], intro.reply)
@@ -149,6 +150,9 @@ class GuidedPersistenceTests(unittest.TestCase):
         self.turn(conversation, action="skip_checkin")
         self.turn(conversation, "这是想法，另一个是心情，可能失落或平静。")
         self.turn(conversation, "事情：女儿没有回电话；想法：她是不是不在乎我；心情：失落；做法：没有再联系")
+        if lesson == "lesson-1":
+            self.turn(conversation, "6分")
+            self.turn(conversation, "5分")
         state = decrypt_json(conversation.agent_state_encrypted)
         self.assertEqual(state["stage"], "review")
         self.assertFalse(state["confirmed_record"])

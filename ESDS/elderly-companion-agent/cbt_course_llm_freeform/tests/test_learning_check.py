@@ -32,6 +32,8 @@ def prepared():
     state = step(new_course_state("lesson-1", reflection_policy="none"), action="skip_checkin").state
     state = step(state, "这是他的想法，失落是心情。").state
     state = step(state, "事情：女儿没接电话；想法：她是不是嫌我烦；心情：失落；做法：没有再联系").state
+    state = step(state, "6分").state
+    state = step(state, "5分").state
     return step(state, action="confirm_record").state
 
 
@@ -113,6 +115,8 @@ class LearningCheckPersistenceTests(unittest.TestCase):
                 turn(action="skip_checkin")
                 turn("这是想法，失落是心情。")
                 turn("事情：女儿没回电话；想法：她是不是嫌我烦；心情：失落；做法：没再联系")
+                turn("6分")
+                turn("5分")
                 turn(action="confirm_record")
                 before = copy.deepcopy(decrypt_json(conversation.agent_state_encrypted))
                 class Broken(PreviewClient):

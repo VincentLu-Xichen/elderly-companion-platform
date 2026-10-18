@@ -26,6 +26,8 @@ class NavigationClient:
         latest = json.loads(messages[-1]["content"])
         data = {"intent": self.intent, "reply": "您是想确认已有目标，还是暂不设置目标继续？" if self.intent == "clarify" else "",
             "actions": [{"action": action, "source_message_id": "wrong" if self.bad_source else latest["id"], "quote": latest["text"]} for action in self.actions]}
+        if self.intent == "goal":
+            data["goal_items"] = [latest["text"]]
         return ChatCompletionResult(text=json.dumps(data, ensure_ascii=False), model="navigation-test", finish_reason="stop")
 
 
