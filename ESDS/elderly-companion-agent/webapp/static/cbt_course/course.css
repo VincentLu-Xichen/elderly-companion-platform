@@ -220,16 +220,20 @@ body[data-course-page] {
 .preview-notice { margin: 0; padding: 10px 24px; background: #fff4cf; color: #665329; font: 13px/1.65 sans-serif; }
 .catalog-shell > .preview-notice { margin-top: 26px; border-radius: 8px; }
 .guided-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
-.guided-dialogue { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
-.guided-dialogue:has(.learning-check-card:not([hidden])) { grid-template-rows: auto minmax(0, 1fr) auto; }
-.guided-course .course-message-list { padding: 30px clamp(20px, 4vw, 65px); }
+.guided-dialogue { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
+.course-materials { min-height: 0; max-height: min(22dvh, 160px); overflow-y: auto; overscroll-behavior: contain; }
+.course-materials:not(:has(.learning-check-card:not([hidden]))) { display: none; }
+.guided-course .conversation-stage { grid-row: 2; overflow: hidden; }
+.guided-course .conversation-composer { grid-row: 3; }
+.guided-course .course-message-list { box-sizing: border-box; padding: 30px clamp(20px, 4vw, 65px); overscroll-behavior: contain; }
 .guided-course .course-message { max-width: 90%; margin-bottom: 24px; }
 .guided-course .course-message > span { font: 12px/1.5 sans-serif; letter-spacing: 0; }
 .guided-course .course-message-bubble { font-size: 17px; line-height: 1.9; overflow-wrap: anywhere; }
-.guided-course .conversation-composer { padding: 16px clamp(20px, 4vw, 65px); }
+.guided-course .conversation-composer { padding: 8px clamp(20px, 4vw, 65px); }
 .guided-course .conversation-composer label { font: 14px/1.5 sans-serif; letter-spacing: 0; margin: 0; }
 .composer-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.guided-course .conversation-composer textarea { width: 100%; box-sizing: border-box; min-height: 72px; font-size: 17px; }
+.guided-course .conversation-composer textarea { display: block; width: 100%; box-sizing: border-box; height: 44px; min-height: 44px; max-height: 44px; padding: 6px 2px; resize: none; overflow-y: auto; font-size: 17px; }
+.guided-course .conversation-composer-meta { margin-top: 6px; }
 .guided-course .conversation-composer-meta > span { font: 12px/1.5 sans-serif; }
 .guided-course .conversation-send { font: 15px/1.5 sans-serif; border-radius: 6px; padding: 9px 22px; }
 .guided-text-button, .guided-example { border: 0; background: transparent; color: var(--course-forest); cursor: pointer; font: 13px/1.6 sans-serif; padding: 5px 0; text-decoration: underline; text-underline-offset: 4px; }
@@ -277,11 +281,10 @@ body[data-course-page] {
   .guided-course .conversation-title { text-align: left; }
   .guided-course .conversation-progress { grid-column: auto; justify-self: stretch; grid-template-columns: 1fr auto; }
   .guided-workspace { display: flex; flex-direction: column; }
-  .guided-dialogue { min-height: 60dvh; grid-template-rows: minmax(260px, 1fr) auto; }
-  .guided-dialogue:has(.learning-check-card:not([hidden])) { grid-template-rows: auto minmax(260px, 1fr) auto; }
+  .guided-dialogue { height: 85dvh; min-height: 480px; grid-template-rows: auto minmax(0, 1fr) auto; }
   .guided-course .course-message-list { max-height: 50dvh; padding: 22px 16px; box-sizing: border-box; }
   .guided-course .course-message-bubble { font-size: 17px; }
-  .guided-course .conversation-composer { padding: 14px 16px; }
+  .guided-course .conversation-composer { padding: 8px 16px; }
   .guided-notebook { border-left: 0; border-top: 1px solid var(--course-line); overflow: visible; }
   .notebook-heading p { margin-bottom: 0; }
   .guided-course .conversation-composer-meta > span:first-child { display: none; }
@@ -296,3 +299,34 @@ body[data-course-page] {
 .blueprint-arrow-3 { grid-column: 2; }
 .blueprint-behavior { grid-column: 3; }
 .blueprint-concepts img { max-width: 100%; height: auto; }
+/* Lesson 2 keeps imagined comparison separate from the current case model. */
+.lesson2-table-wrap { overflow-x: auto; max-width: 100%; }
+#course-lesson2 table { width: 100%; border-collapse: collapse; font-size: .94em; }
+#course-lesson2 th, #course-lesson2 td { text-align: left; vertical-align: top; padding: .6rem; border-bottom: 1px solid #d7ded3; overflow-wrap: anywhere; }
+#course-lesson2 details { margin: 1rem 0; }
+#course-lesson2 summary { cursor: pointer; font-weight: 600; }
+.lesson2-triad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: .8rem 0; }
+.lesson2-triad-node { min-width: 0; padding: .7rem; background: #f0f3ea; border: 1px solid #d7ded3; border-radius: .6rem; overflow-wrap: anywhere; }
+.lesson2-triad-node p { margin: .4rem 0 0; }
+@media (max-width: 700px) { .lesson2-triad { grid-template-columns: 1fr; } }
+.weekly-score-buttons { display: flex; flex-wrap: wrap; gap: .4rem; }
+#course-teacher-material { margin-top: 10px; margin-bottom: 10px; padding: 10px 16px; }
+#course-teacher-material li { margin: .5rem 0; }
+#course-teacher-material li p { margin: .2rem 0 .7rem; }
+#course-teacher-material details { margin: .7rem 0; }
+#course-teacher-material > details { margin: 0; }
+#course-teacher-material summary { cursor: pointer; font-weight: 600; }
+#course-teacher-material p { line-height: 1.7; }
+/* Short desktop windows still reserve space for both the latest reply and input. */
+@media (min-width: 681px) and (max-height: 800px) {
+  .guided-course .conversation-header { padding: 8px 20px; }
+  .guided-course .preview-notice { padding: 4px 20px; }
+  .guided-stages { padding: 6px 16px; gap: 5px; }
+  .course-stage-focus { margin: 0 16px 8px; padding: 6px 12px; font-size: 12px; line-height: 1.4; }
+  .course-stage-focus p { margin-top: 2px; }
+  .guided-course .conversation-composer { padding: 8px 20px; }
+  .guided-course .conversation-composer-meta { margin-top: 6px; }
+  .course-materials { max-height: 100px; }
+}
+#course-homework label { display: block; margin: .7rem 0; }
+#course-homework textarea, #course-homework select { display: block; width: 100%; max-width: 100%; box-sizing: border-box; padding: .6rem; font: inherit; }

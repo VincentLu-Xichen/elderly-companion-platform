@@ -13,14 +13,18 @@ from sqlalchemy.orm import Session
 
 from cbt_course_llm_freeform.catalog import COURSE_CATALOG
 from cbt_course_llm_freeform.schemas import CourseMessageCreate
+from cbt_course_llm_freeform.homework import (
+    DiaryCreate,
+    save as save_diary,
+    entries as diary_entries,
+)
 from cbt_course_llm_freeform.services import (
-    AGENT_VERSION,
+    is_current_course,
     course_conversation_payload,
     create_or_resume_course,
     get_owned_course,
     process_course_turn,
 )
-from cbt_course_llm_freeform.catalog import lesson_version
 from cbt_course_llm_freeform.reflection import generate_course_reflection
 from cbt_course_llm_freeform.streaming import stream_course_turn
 from webapp.config import settings
@@ -40,6 +44,33 @@ def register_course_routes(
     require_csrf: Callable[..., Any],
     templates: Jinja2Templates,
 ) -> None:
+    @app.post(
+        "/api/cbt-course/conversations/{conversation_id}/homework",
+        dependencies=[Depends(require_csrf)],
+    )
+    def course_homework_create(
+        conversation_id: str,
+        payload: DiaryCreate,
+        participant: Participant = Depends(current_participant),
+        db: Session = Depends(get_db),
+    ):
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
+        if conversation is None:
+            raise HTTPException(404)
+        if not has_current_consent(db, participant.id):
+            raise HTTPException(403, "请先确认数据记录告知。")
+        if not is_current_course(conversation):
+            raise HTTPException(409, "历史课程只读。")
+        enforce_rate_limit(db, f"course-diary:{participant.id}")
+        try:
+            row = save_diary(db, conversation, payload)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        db.expire(conversation, ["homework_entries"])
+        return {"id": row.id, "entries": diary_entries(conversation)}
+
     @app.get("/cbt-course", response_class=HTMLResponse)
     def course_catalog_page(
         request: Request,
@@ -48,7 +79,9 @@ def register_course_routes(
     ):
         conversations = db.scalars(
             select(Conversation)
-            .where(Conversation.participant_id == participant.id, Conversation.lesson_id.is_not(None))
+            .where(
+                Conversation.participant_id == participant.id, Conversation.lesson_id.is_not(None)
+            )
             .order_by(Conversation.started_at.desc())
         ).all()
         active_by_lesson: dict[str, Conversation] = {}
@@ -56,7 +89,7 @@ def register_course_routes(
         for item in conversations:
             if item.lesson_id:
                 latest_by_lesson.setdefault(item.lesson_id, item)
-                if item.status == "active" and item.agent_version == AGENT_VERSION and item.lesson_version == lesson_version(item.lesson_id):
+                if item.status == "active" and is_current_course(item):
                     active_by_lesson.setdefault(item.lesson_id, item)
         return templates.TemplateResponse(
             request=request,
@@ -68,8 +101,15 @@ def register_course_routes(
                 "active_by_lesson": active_by_lesson,
                 "latest_by_lesson": latest_by_lesson,
                 "conversations": conversations,
-                "preview_mode": os.getenv("CBT_PREVIEW_MODE") == "true" and settings.environment == "development",
-                "demo_provider": {"deepseek": "DeepSeek", "dashscope": "百炼", "azure": "Azure OpenAI"}.get(os.getenv("CBT_DEMO_PROVIDER", ""), "") if settings.environment == "development" else "",
+                "preview_mode": os.getenv("CBT_PREVIEW_MODE") == "true"
+                and settings.environment == "development",
+                "demo_provider": (
+                    {"deepseek": "DeepSeek", "dashscope": "百炼", "azure": "Azure OpenAI"}.get(
+                        os.getenv("CBT_DEMO_PROVIDER", ""), ""
+                    )
+                    if settings.environment == "development"
+                    else ""
+                ),
             },
         )
 
@@ -82,7 +122,9 @@ def register_course_routes(
         if not has_current_consent(db, participant.id):
             raise HTTPException(403, "请先确认数据记录告知。")
         try:
-            conversation, resumed = create_or_resume_course(db, participant_id=participant.id, lesson_id=lesson_id)
+            conversation, resumed = create_or_resume_course(
+                db, participant_id=participant.id, lesson_id=lesson_id
+            )
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
         return {
@@ -99,14 +141,27 @@ def register_course_routes(
         participant: Participant = Depends(current_participant),
         db: Session = Depends(get_db),
     ):
-        conversation = get_owned_course(db, conversation_id=conversation_id, participant_id=participant.id)
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
         if not conversation:
             raise HTTPException(404)
         return templates.TemplateResponse(
             request=request,
             name="cbt_course/conversation.html",
-            context={"participant": participant, "conversation": course_conversation_payload(conversation), "preview_mode": os.getenv("CBT_PREVIEW_MODE") == "true" and settings.environment == "development",
-                     "demo_provider": {"deepseek": "DeepSeek", "dashscope": "百炼", "azure": "Azure OpenAI"}.get(os.getenv("CBT_DEMO_PROVIDER", ""), "") if settings.environment == "development" else ""},
+            context={
+                "participant": participant,
+                "conversation": course_conversation_payload(conversation),
+                "preview_mode": os.getenv("CBT_PREVIEW_MODE") == "true"
+                and settings.environment == "development",
+                "demo_provider": (
+                    {"deepseek": "DeepSeek", "dashscope": "百炼", "azure": "Azure OpenAI"}.get(
+                        os.getenv("CBT_DEMO_PROVIDER", ""), ""
+                    )
+                    if settings.environment == "development"
+                    else ""
+                ),
+            },
         )
 
     @app.get("/api/cbt-course/conversations/{conversation_id}")
@@ -115,7 +170,9 @@ def register_course_routes(
         participant: Participant = Depends(current_participant),
         db: Session = Depends(get_db),
     ):
-        conversation = get_owned_course(db, conversation_id=conversation_id, participant_id=participant.id)
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
         if not conversation:
             raise HTTPException(404)
         return course_conversation_payload(conversation)
@@ -131,7 +188,9 @@ def register_course_routes(
         participant: Participant = Depends(current_participant),
         db: Session = Depends(get_db),
     ):
-        conversation = get_owned_course(db, conversation_id=conversation_id, participant_id=participant.id)
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
         if not conversation:
             raise HTTPException(404)
         content = payload.content.strip()
@@ -151,7 +210,10 @@ def register_course_routes(
                 action=payload.action,
                 expected_revision=payload.expected_revision,
             )
-            if result["course"]["completed"] and result["course"]["reflection"].get("status") == "pending":
+            if (
+                result["course"]["completed"]
+                and result["course"]["reflection"].get("status") == "pending"
+            ):
                 background_tasks.add_task(generate_course_reflection, conversation.id)
             return result
         except ValueError as exc:
@@ -165,32 +227,42 @@ def register_course_routes(
             )
             raise HTTPException(502, "课程回复暂时不可用，本轮进度没有改变，请稍后重试。") from exc
 
-    @app.post("/api/cbt-course/conversations/{conversation_id}/reflection", dependencies=[Depends(require_csrf)])
+    @app.post(
+        "/api/cbt-course/conversations/{conversation_id}/reflection",
+        dependencies=[Depends(require_csrf)],
+    )
     def retry_course_reflection(
         conversation_id: str,
         background_tasks: BackgroundTasks,
         participant: Participant = Depends(current_participant),
         db: Session = Depends(get_db),
     ):
-        conversation = get_owned_course(db, conversation_id=conversation_id, participant_id=participant.id)
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
         if conversation is None:
             raise HTTPException(404)
         if not has_current_consent(db, participant.id):
             raise HTTPException(403, "请先确认数据记录告知。")
-        if conversation.status != "completed" or conversation.agent_version != AGENT_VERSION:
+        if conversation.status != "completed" or not is_current_course(conversation):
             raise HTTPException(400, "本课尚未完成或使用历史版本。")
         enforce_rate_limit(db, f"course-reflection:{participant.id}")
         background_tasks.add_task(generate_course_reflection, conversation.id)
         return {"ok": True}
 
-    @app.post("/api/cbt-course/conversations/{conversation_id}/messages/stream", dependencies=[Depends(require_csrf)])
+    @app.post(
+        "/api/cbt-course/conversations/{conversation_id}/messages/stream",
+        dependencies=[Depends(require_csrf)],
+    )
     def course_message_stream(
         conversation_id: str,
         payload: CourseMessageCreate,
         participant: Participant = Depends(current_participant),
         db: Session = Depends(get_db),
     ):
-        conversation = get_owned_course(db, conversation_id=conversation_id, participant_id=participant.id)
+        conversation = get_owned_course(
+            db, conversation_id=conversation_id, participant_id=participant.id
+        )
         if conversation is None:
             raise HTTPException(404)
         if not has_current_consent(db, participant.id):
@@ -204,13 +276,24 @@ def register_course_routes(
         participant_id = participant.id
 
         def events():
-            stream = stream_course_turn(conversation_id=conversation_id, participant_id=participant_id,
-                content=content, idempotency_key=payload.idempotency_key, action=payload.action, expected_revision=payload.expected_revision)
+            stream = stream_course_turn(
+                conversation_id=conversation_id,
+                participant_id=participant_id,
+                content=content,
+                idempotency_key=payload.idempotency_key,
+                action=payload.action,
+                expected_revision=payload.expected_revision,
+            )
             try:
                 for item in stream:
-                    yield "data: " + json.dumps(item, ensure_ascii=False, separators=(",", ":")) + "\n\n"
+                    yield "data: " + json.dumps(
+                        item, ensure_ascii=False, separators=(",", ":")
+                    ) + "\n\n"
             finally:
                 stream.close()
 
-        return StreamingResponse(events(), media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"})
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
+        )

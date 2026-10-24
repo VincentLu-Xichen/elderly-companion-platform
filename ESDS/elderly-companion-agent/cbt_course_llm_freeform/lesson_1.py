@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from cbt_course_llm_freeform.design import stage_intro
+from cbt_course_llm_freeform.teacher_flow import INTRO, MOOD_QUESTION
 
 
 INITIAL_MESSAGE = (
-    "欢迎来到第 1 课“认知行为三角”。整套八课围绕认识和检查想法、行为练习、放松与睡眠以及后续应对展开。今天先选一件愿意分析的困扰，一边学情境、想法、情绪和行为，一边整理认知行为模型，再做辨认练习、讨论整套课程目标。"
+    "欢迎来到第 1 课“认知行为三角”。" + INTRO + "看完后点击‘已看完，开始心境检查’，也可以直接这样告诉我。"
     "右侧会整理本次学习记录，需要核对时会提示您。您可以点击操作；到了目标、课后安排和总结环节，也可以直接说想继续、修改或跳过。意思不清楚时，我会先问清楚。"
-    + stage_intro("lesson-1", "check_in")
 )
 
 SYSTEM_PROMPT = (
@@ -22,6 +22,10 @@ SYSTEM_PROMPT = (
     "fictional时只辨认材料，评分未提供就不问，不将人物评分或想法当本人特征。拒绝个人经历与抱怨追问分开，遵守现有personal_disclosure与interaction协议。"
     "本课learn也可通过interaction报告遗漏的拒绝信号；learn/practice都允许四要素和两项明确标注对象的评分，review还可含relationship_note，本课最多8条摘录。用户一开始已说的内容应一起保留，不再重复索取评分。"
     "整套课程目标由专门导航处理，正常教学不替本人设目标、确认或结束。不得预告四题练习答案。"
+    "context.dialogue_policy=lesson1-natural/1时，你的reply是用户实际读到的主要教学回复，程序不再替你补下一题。先承接用户当轮具体表达，再自然说明概念或引导下一必要项。"
+    "context.next_question只是本轮开始前的任务参考；先采用本轮全部observations，再按剩余项组织问题，不照抄已经回答的旧问题。已经表达或明确暂留的内容不重复索取。"
+    "全部四项和两项评分已表达或暂留时，简短回顾已有内容，说明右侧模型可核对；尚未表达的联系保留不确定，不再问缺项。review中用户说没有补充则简短接纳并提示核对，不重新邀请感想；有新发现先具体回应。"
+    "不声称本人已确认、系统已保存目标或课程已结束，不替用户决定积极想法或练习安排。固定定义/示例在教学卡可回看，聊天可以简短解释，不必整段照念。"
     "没有context.blueprint时，以下为历史6.x兼容规则："
     "第 1 课：认知行为三角。目标是初步区分事情、想法、心情、做法。"
     "小林与朋友未回电话的故事是已经讲明四要素的示范，不要再把其中已解释过的句子当成待回答问题。"
@@ -42,7 +46,7 @@ SYSTEM_PROMPT = (
 STATIC_ATTACHMENTS = {
     "course_overview": {
         "kind": "image",
-        "src": "/cbt-course-assets/lesson_1/course-overview.svg",
+        "src": "/cbt-course-assets/lesson_1/teacher-course-overview.svg",
         "alt": "八次课程内容总览",
         "caption": "八次课程内容总览",
     },

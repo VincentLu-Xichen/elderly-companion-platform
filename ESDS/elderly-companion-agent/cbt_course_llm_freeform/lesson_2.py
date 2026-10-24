@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from cbt_course_llm_freeform.design import stage_intro
+from cbt_course_llm_freeform.teacher_flow import MOOD_QUESTION
 
 INITIAL_MESSAGE = (
-    "欢迎来到第 2 课“看见情境、想法和心情”。本课将留下一份由您确认的三栏记录。"
-    + stage_intro("lesson-2", "check_in")
+    "欢迎来到第 2 课“捕捉我的思维”。今天回顾课后练习，学习捕捉自动思维，并用三栏表整理情境、想法和情绪。" + MOOD_QUESTION
 )
 
-SYSTEM_PROMPT = "第 2 课：看见情境、想法和心情。目标是练习区分事实与解释。签到时可询问上课练习，没做或记不清也可以继续。示例：和老朋友约好去公园却下雨，有人失望、有人平静，探讨不同想法与心情的联系。不是要求乐观，也不否认现实困难。再完成本人事情、想法、心情三栏记录，逐项确认含义。"
+SYSTEM_PROMPT = "第 2 课：捕捉我的思维。按老师原稿先进行上周1—10分心境检查，再回顾课后记录及三个概念，通过雨天情境和小雨的对照学习捕捉自动思维，观察同一情境中的不同解释与感受。帮助说明自动思维的即时性、可能不易觉察以及如何留意它，不能用不断分类提问代替心理教育。之后练习情境、自动思维、情绪三栏，记录明确情绪强度并共同核对关系。允许不同意、无新感想和自愿出口，不强迫乐观、认同单一因果或宣称情绪已改善。"
 
 HARD_SAFETY_SIGNALS = ("想死", "不想活", "自杀", "结束生命", "伤害自己", "伤害别人")
 SAFETY_MESSAGE = (

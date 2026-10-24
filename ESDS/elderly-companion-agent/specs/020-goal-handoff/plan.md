@@ -1,0 +1,3 @@
+# 修复方案
+
+扩展navigation的check_feedback阶段及现有两个动作，runtime只在非活动补练中接入。意图先校验，再在副本进入目标/生成草稿，同事务提交；其他导航不放宽。同步离线Preview判读适配明确目标与继续/补练。reflection三处锁更新关闭synchronize_session，显式refresh已有对象。专项、全回归和有限DeepSeek后交付入口及旧进程的临时操作方式。

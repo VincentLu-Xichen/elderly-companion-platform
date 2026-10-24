@@ -1,4 +1,5 @@
 """Event-only interaction reflection. Candidate rules are not semantic verdicts."""
+
 from __future__ import annotations
 
 import re
@@ -22,7 +23,17 @@ class InteractionReflection(BaseModel):
     reply_length: Literal["short", "standard"]
     follow_up: Literal["stop", "reduce", "standard"]
     reply: str = Field(min_length=1, max_length=300)
-    personal_intent: Literal["none", "refuse_personal", "refuse_field", "unclear", "confirm_all", "local_only", "allow_all", "use_personal_once", "pause"] = "none"
+    personal_intent: Literal[
+        "none",
+        "refuse_personal",
+        "refuse_field",
+        "unclear",
+        "confirm_all",
+        "local_only",
+        "allow_all",
+        "use_personal_once",
+        "pause",
+    ] = "none"
     response_type: Literal["acknowledge_adjustment", "review_current_case", "neutral"] = "neutral"
     tone: Literal["standard", "polite"] = "standard"
     task_action: Literal["continue", "stop_check", "pause"] = "continue"
@@ -65,25 +76,60 @@ local_only仅表示已有确认问题后没有明确长期同意，或用户明�
 def candidate(text: str, *, task_feedback=False) -> bool:
     # High recall on interaction expressions, including negated/reported ones:
     # the model, not this rule, must decide whom the expression refers to.
-    return bool(re.search(r"追问|审问|一直问|一直让.{0,4}解释|问来问去|别.{0,2}问|不要.{0,3}问|少问|少解释|解释太多|解释太快|解释太长|说重点|啰嗦|太啰唆|说.{0,3}太长|讲.{0,3}太长|回复.{0,3}太长|讲简单|说简单|烦不烦|你.{0,6}烦|别.{0,3}解释|我想少解释|详细.{0,3}解释|讲详细|你.{0,5}没.{0,3}听|别打断|不想聊这个|听不下去|受不了你", text)) or bool(task_feedback and re.search(r"题.{0,4}太多|这么多题|不想.{0,8}(?:做|答|练|继续)|不做.{0,5}题|剩下.{0,6}(?:跳过|不做)|先休息|暂停", text))
+    return bool(
+        re.search(
+            r"追问|审问|一直问|一直让.{0,4}解释|问来问去|别.{0,2}问|不要.{0,3}问|少问|少解释|解释太多|解释太快|解释太长|说重点|啰嗦|太啰唆|说.{0,3}太长|讲.{0,3}太长|回复.{0,3}太长|讲简单|说简单|烦不烦|你.{0,6}烦|别.{0,3}解释|我想少解释|详细.{0,3}解释|讲详细|你.{0,5}没.{0,3}听|别打断|不想聊这个|听不下去|受不了你",
+            text,
+        )
+    ) or bool(
+        task_feedback
+        and re.search(
+            r"题.{0,4}太多|这么多题|不想.{0,8}(?:做|答|练|继续)|不做.{0,5}题|剩下.{0,6}(?:跳过|不做)|先休息|暂停",
+            text,
+        )
+    )
 
 
 def validate(decision: InteractionReflection, latest: dict) -> dict:
-    if decision.source_message_id != latest.get("id") or decision.quote not in latest.get("content", ""):
+    if decision.source_message_id != latest.get("id") or decision.quote not in latest.get(
+        "content", ""
+    ):
         raise ValueError("Interaction reflection has no faithful current source")
-    prefix = latest["content"][:latest["content"].find(decision.quote)][-8:]
-    if decision.verdict == "feedback" and re.search(r"(?:没有|不是|并非|不觉得|没觉得)(?:很|太|觉得|是)?$", prefix):
+    prefix = latest["content"][: latest["content"].find(decision.quote)][-8:]
+    if decision.verdict == "feedback" and re.search(
+        r"(?:没有|不是|并非|不觉得|没觉得)(?:很|太|觉得|是)?$", prefix
+    ):
         raise ValueError("Interaction quote omitted a negation")
-    if any(label in text for text in (decision.observation, decision.hypothesis, decision.alternative_explanation, decision.reply)
-           for label in ("诊断为", "人格障碍", "认知障碍", "理解能力差", "智力低", "不配合")):
+    if any(
+        label in text
+        for text in (
+            decision.observation,
+            decision.hypothesis,
+            decision.alternative_explanation,
+            decision.reply,
+        )
+        for label in ("诊断为", "人格障碍", "认知障碍", "理解能力差", "智力低", "不配合")
+    ):
         raise ValueError("Unsupported interaction label")
-    markers = ("[[", "已完成本课", "已经完成课程", "已确认记录", "本课已完成", "课程已完成", "已确认保存", "本课结束", "已经完全掌握")
+    markers = (
+        "[[",
+        "已完成本课",
+        "已经完成课程",
+        "已确认记录",
+        "本课已完成",
+        "课程已完成",
+        "已确认保存",
+        "本课结束",
+        "已经完全掌握",
+    )
     if decision.personal_intent == "none":
         markers += ("？", "?")
     if decision.verdict == "feedback" and any(marker in decision.reply for marker in markers):
         raise ValueError("Interaction response violates task boundary")
     result = decision.model_dump()
-    if result["scope"] == "cross_course" and not re.search(r"以后|今后|每次|所有课|每节课|后面.{0,3}课|之后.{0,3}课", latest["content"]):
+    if result["scope"] == "cross_course" and not re.search(
+        r"以后|今后|每次|所有课|每节课|后面.{0,3}课|之后.{0,3}课", latest["content"]
+    ):
         result["scope"] = "lesson"
     return result
 
@@ -94,9 +140,20 @@ def guidance(state: dict) -> dict | None:
     if not notes:
         return None
     note = notes[0]
-    instruction = ("使用简短回复。" if note["reply_length"] == "short" else "按当前任务使用正常篇幅。")
-    instruction += {"stop": "停止本案例追问，以已有内容回顾，未收集的留空，不换事件。", "reduce": "减少重复追问理由。", "standard": "恢复当前任务必要的单项询问。"}[note["follow_up"]]
+    instruction = (
+        "使用简短回复。" if note["reply_length"] == "short" else "按当前任务使用正常篇幅。"
+    )
+    instruction += {
+        "stop": "停止本案例追问，以已有内容回顾，未收集的留空，不换事件。",
+        "reduce": "减少重复追问理由。",
+        "standard": "恢复当前任务必要的单项询问。",
+    }[note["follow_up"]]
     if note.get("tone") == "polite":
         instruction += "语气委婉礼貌，承认负担，不训诫或用系统状态敷衍。"
-    return {"memory_id": note["id"], "reply_length": note["reply_length"], "follow_up": note["follow_up"],
-            "scope": note["scope"], "instruction": instruction + "不降低任务或来源校验要求。"}
+    return {
+        "memory_id": note["id"],
+        "reply_length": note["reply_length"],
+        "follow_up": note["follow_up"],
+        "scope": note["scope"],
+        "instruction": instruction + "不降低任务或来源校验要求。",
+    }

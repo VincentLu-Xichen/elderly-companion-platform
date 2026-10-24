@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1160" role="img" aria-labelledby="title desc">
+  <title id="title">八次课程与练习内容</title>
+  <desc id="desc">第一课四要素和目标；第二课自动思维和三栏；第三课歪曲思维；第四课相反行为；第五课活动或暴露等级；第六课苏格拉底提问和五栏；第七课睡眠或放松；第八课进展与预防复发计划。</desc>
+  <rect width="1200" height="1160" rx="24" fill="#f7f1e4"/>
+  <g font-family="sans-serif" fill="#173e33">
+    <text x="40" y="62" font-size="34" font-weight="700">八次课程 · 课程名称与练习内容</text>
+    <text x="40" y="103" font-size="23">认知结构调整与行为激活 · 按老师课程总表呈现</text>
+    <g font-size="25">
+      <text x="40" y="169" font-weight="700">第1课　认知行为三角</text><text x="72" y="207">区分情境、认知、情绪、行为；制定练习目标</text>
+      <text x="40" y="278" font-weight="700">第2课　捕捉我的思维</text><text x="72" y="316">识别自动思维；学习记录三栏表</text>
+      <text x="40" y="387" font-weight="700">第3课　识别歪曲思维</text><text x="72" y="425">识别歪曲的思维</text>
+      <text x="40" y="496" font-weight="700">第4课　相反行为</text><text x="72" y="534">学习相反行为</text>
+      <text x="40" y="605" font-weight="700">第5课　行为激活 / 行为暴露（二选一）</text><text x="72" y="643">回顾三栏表、相反行为；行为激活或暴露的难度等级排序</text>
+      <text x="40" y="714" font-weight="700">第6课　修正我的思维</text><text x="72" y="752">苏格拉底提问；学习记录五栏表</text>
+      <text x="40" y="823" font-weight="700">第7课　睡眠 / 放松训练（二选一）</text>
+      <text x="72" y="861">睡眠：记录睡眠日志、制定睡眠计划、睡眠心理教育</text>
+      <text x="72" y="899">放松：心理教育、渐进式肌肉松弛法、4–7–8 深度呼吸法</text>
+      <text x="40" y="980" font-weight="700">第8课　预防复发</text><text x="72" y="1018">回顾练习进展；制定预防复发计划</text>
+      <text x="40" y="1110" font-size="21" fill="#60756d">这是学习内容总览；具体练习按课程引导和本人意愿开展。</text>
+    </g>
+  </g>
+</svg>

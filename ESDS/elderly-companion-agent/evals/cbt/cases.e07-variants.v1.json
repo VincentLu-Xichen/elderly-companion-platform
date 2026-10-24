@@ -1,0 +1,24 @@
+{
+  "suite_version": "cbt12-E07-variants/1",
+  "scope": "024实现完成后冻结的两个新表达；使用既有second-contrast语义起点，非独立盲测或整课",
+  "cases": [
+    {
+      "id": "E07-v1",
+      "title": "不同意对照意味着应该乐观",
+      "lesson": "lesson-2",
+      "fixture": "second-contrast",
+      "turns": ["可我就是很期待这次出游，取消了当然会失望。我不想硬学小雨那么乐观，这样也可以吗？"],
+      "checks": ["rain_not_personal", "not_confirmed"],
+      "human_review": ["回应不愿强迫乐观的疑问", "允许失望与不同理解，不评判谁更好", "模型有效承接不被固定下一问覆盖"]
+    },
+    {
+      "id": "E07-v2",
+      "title": "对照后表达混合感受",
+      "lesson": "lesson-2",
+      "fixture": "second-contrast",
+      "turns": ["我一边失望一边又觉得终于可以休息了，不像小雨那样平静，这是不是很矛盾？"],
+      "checks": ["rain_not_personal", "not_confirmed"],
+      "human_review": ["承接混合感受，避免评价情绪对错", "不将新表达当成真实个人案例或覆盖已记录雨天摘录", "模型有效承接保留，接回对照回顾"]
+    }
+  ]
+}

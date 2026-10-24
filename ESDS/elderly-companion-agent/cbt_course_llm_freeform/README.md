@@ -1,4 +1,16 @@
-# 八课：结构化记录与可配置反馈工作流
+# 前两课：教学、结构化记录与Reflexion
+
+最新024：第二课升为6.2-contrast-reply，contrast普通回答先保留模型承接，再接原有下一问；校验、阶段、Prompt均不变。253项离线回归及有限原例/变体检查完成，用户体验待验收。详见[024对照与代码讲解](../specs/024-lesson2-contrast-reply/report.md)；下方6.1为022时点。
+
+当前只运行第1、2课。后六课内容、skill_flow/skill_content、对应动作和字段已按用户授权删除；旧资料及加密历史记录保留。范围见[021报告](../specs/021-two-lesson-backend/report.md)；最新职责拆分及阅读指南见[022报告](../specs/022-backend-readability/report.md)，第一课7.5、第二课6.1，Prompt契约保持不变。
+
+主要入口：`catalog.py`注册两课，`state.py`创建状态并定义案例复用规则；`services.py`处理消息与持久化；`runtime.py`分派第一课教学/检验/目标及`lesson2_flow.py`，后者拆分复习、自然操作、摘录与回应；`agent.py`执行模型调用，`presentation.py`组装页面/API数据。`memory.py`提供第一课到第二课的授权成果，`interaction_memory.py`与`reflection.py`分别管理互动记忆及独立课末复盘；`history.py`只呈现退出活动目录的旧快照。runtime与包根原有公开导入继续兼容。
+
+022通过246项现有回归；6组38轮离线对照的回复、状态、页面与调用轨迹不变。32个模块格式及静态检查通过，前端和两份纯教学模块指纹不变。此为可读性整理，没有新增Agent、模型调用、数据库变更或交互能力；旧预览没有重启。
+
+当前离线验证命令：`.venv\Scripts\python.exe -B scripts\run_regression.py`。旧八课轨迹脚本`trace_course_workflow.py`已删除，下方对应历史命令不再适用。前端与老师材料保留，本次清理不等于开放对话或新架构已验证。
+
+## 历史交付说明（以022、021及根Roadmap为当前范围）
 
 最新为[015报告](../specs/015-feedback-and-review/implementation.md)：第一课7.1，检验反馈也经过原事件Reflexion或判题漏检出口，程序采用停止本组题/暂停等动作；案例回顾由有来源的LLM概括，原话保留。每课固定课末Reflexion继续，未自动跨课采用。其他课版本/教学Prompt不变；下文014为内容基线。
 

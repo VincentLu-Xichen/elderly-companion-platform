@@ -121,7 +121,8 @@ class FeedbackReviewTests(unittest.TestCase):
         client = Client()
         runtime = FreeformCourseRuntime(agent=FreeformCourseAgent(client=client))
         result = runtime._result(state, "old", "practice")
-        self.assertIn("白跑了一趟", result.reply)
+        self.assertEqual(result.reply, "old")  # Cached recap must not replace the teaching reply.
+        self.assertIn("白跑了一趟", result.state["blueprint"]["case_review"]["summary"])
         self.assertEqual(result.state["draft_record"]["thought"]["value"], "白跑了一堂")
         self.assertNotIn("本次留空", result.reply)
         self.assertNotIn("相信程度", result.reply)

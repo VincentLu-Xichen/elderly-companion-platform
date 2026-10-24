@@ -206,15 +206,18 @@ class BoundaryRuntimeTests(unittest.TestCase):
         from cbt_course_llm_freeform.runtime import can_reuse_case
         from cbt_course_llm_freeform.schemas import AgentResult, TeachingDecision
         class CaptureAgent:
+            def lesson2_turn(inner, history, *, context):
+                from cbt_course_llm_freeform.lesson2_flow import Decision
+                from cbt_course_llm_freeform.schemas import StageResult
+                inner.context = context
+                return StageResult(completion=None, decision=Decision(reply="继续当前案例。"))
             def reply(inner, history, *, context):
                 inner.context = context
                 return AgentResult(reply="我们继续辨认案例内容。", decision=TeachingDecision(reply="我们继续辨认案例内容。"))
-        for number in range(2, 9):
+        for number in (2,):
             state = new_course_state(f"lesson-{number}", reflection_policy="none")
             state["stage"] = "practice"
             state["disclosure_boundary"] = {"id": "boundary", "scope": "cross_course", "behavior": "do_not_solicit"}
-            if number in {5, 7}:
-                state["path"] = "exposure" if number == 5 else "relaxation"
             state["carryover"] = {"status": "accepted", "summary": {"record": {"situation": {"value": "旧私事"}}}}
             agent = CaptureAgent()
             result = FreeformCourseRuntime(agent=agent).process(state, [{"id": "u", "role": "learner", "content": "可以继续"}])

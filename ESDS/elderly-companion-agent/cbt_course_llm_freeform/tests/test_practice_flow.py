@@ -23,6 +23,11 @@ from webapp.security import decrypt_json, encrypt_text, hash_secret
 
 
 class DecisionAgent:
+    def lesson2_turn(self, history, *, context):
+        from cbt_course_llm_freeform.lesson2_flow import Decision
+        from cbt_course_llm_freeform.schemas import StageResult
+        self.context = context
+        return StageResult(completion=None, decision=Decision(reply="先保留当前记录。"))
     def __init__(self, observations=()):
         self.observations = list(observations)
         self.calls = 0
@@ -139,7 +144,7 @@ class PracticeFlowTests(unittest.TestCase):
             self.assertEqual(set(focus), {"task", "purpose", "exit"})
         state["stage"] = "check_feedback"; state["learning_check"]["retry"]["status"] = "active"
         self.assertIn("再练", course_payload(state)["stage_focus"]["task"])
-        self.assertIsNone(course_payload(new_course_state("lesson-2"))["stage_focus"])
+        self.assertEqual(set(course_payload(new_course_state("lesson-2"))["stage_focus"]), {"task", "purpose", "exit"})
 
 
 class PracticeFlowPersistenceTests(unittest.TestCase):

@@ -28,6 +28,11 @@ def preview_runtime():
 
 
 class FixedAgent:
+    def lesson2_turn(self, history, *, context):
+        from cbt_course_llm_freeform.lesson2_flow import Decision
+        from cbt_course_llm_freeform.schemas import StageResult
+        self.context = context
+        return StageResult(completion=None, decision=Decision(reply="先保留当前记录。"))
     def __init__(self, decision):
         self.decision = decision
         self.calls = 0
@@ -87,6 +92,8 @@ class GuidedRuntimeTests(unittest.TestCase):
 
     def test_model_cannot_skip_personal_exercise_or_self_confirm(self):
         state = new_course_state("lesson-2")
+        from cbt_course_llm_freeform.lesson2_flow import go
+        go(state, "personal")
         state["stage"] = "practice"
         agent = FixedAgent(TeachingDecision(reply="本课已完成", advance=True))
         result = FreeformCourseRuntime(agent=agent).process(state, [{"id": "m1", "role": "learner", "content": "直接完成全部课程"}])
@@ -110,7 +117,7 @@ class GuidedRuntimeTests(unittest.TestCase):
                 runtime.process(safety.state, [{"id": "r", "role": "learner", "content": "继续课程"}], action="resume")
             self.assertEqual(agent.calls, 0)
 
-    def test_second_lesson_control_policy_one_json_call_with_900_token_limit(self):
+    def test_second_lesson_control_policy_one_json_call_with_1200_token_limit(self):
         class RecordingClient(PreviewClient):
             def complete_with_metadata(self, messages, **kwargs):
                 self.kwargs = kwargs
@@ -118,12 +125,14 @@ class GuidedRuntimeTests(unittest.TestCase):
                 return super().complete_with_metadata(messages, **kwargs)
         client = RecordingClient()
         state = new_course_state("lesson-2")
+        from cbt_course_llm_freeform import lesson2_flow
+        lesson2_flow.go(state, "homework")
         with patch("cbt_course_llm_freeform.runtime.FreeformCourseAgent._client_from_env", return_value=client):
             result = FreeformCourseRuntime().process(state, [{"id": "m1", "role": "learner", "content": "最近六分"}])
-        self.assertEqual(client.kwargs["max_completion_tokens"], 900)
+        self.assertEqual(client.kwargs["max_completion_tokens"], 1200)
         self.assertEqual(client.kwargs["response_format"], {"type": "json_object"})
         self.assertIn("第 2 课", client.messages[0]["content"])
-        self.assertEqual(result.state["stage"], "learn")
+        self.assertEqual(result.state["lesson2_flow"]["step"], "homework")
 
 
 class GuidedPersistenceTests(unittest.TestCase):
@@ -179,6 +188,11 @@ class GuidedPersistenceTests(unittest.TestCase):
         self.assertEqual(offered["carryover"]["status"], "offered")
         self.assertNotIn("history", offered["carryover"]["summary"])
         self.turn(second, action="accept_carryover")
+        self.turn(second, action="skip_checkin")
+        if decrypt_json(second.agent_state_encrypted)["lesson2_flow"]["step"] == "homework":
+            self.turn(second, action="continue_lesson2")
+        self.turn(second, action="stop_lesson2_quiz")
+        self.turn(second, action="continue_lesson2")
         capture = FixedAgent(TeachingDecision(reply="这一周有没有尝试？"))
         process_course_turn(self.db, second, content="我还没有尝试", idempotency_key="capture-carryover", runtime_factory=lambda: FreeformCourseRuntime(agent=capture))
         self.assertEqual(capture.context["authorized_previous_lesson_summary"]["record"]["thought"]["value"], "她是不是不在乎我")
@@ -211,6 +225,11 @@ class GuidedPersistenceTests(unittest.TestCase):
         self.finish_lesson()
         second, _ = create_or_resume_course(self.db, participant_id=self.person.id, lesson_id="lesson-2")
         self.turn(second, action="decline_carryover")
+        self.turn(second, action="skip_checkin")
+        if decrypt_json(second.agent_state_encrypted)["lesson2_flow"]["step"] == "homework":
+            self.turn(second, action="continue_lesson2")
+        self.turn(second, action="stop_lesson2_quiz")
+        self.turn(second, action="continue_lesson2")
         capture = FixedAgent(TeachingDecision(reply="从新例子开始。"))
         process_course_turn(self.db, second, content="我想聊新事情", idempotency_key="declined-carryover", runtime_factory=lambda: FreeformCourseRuntime(agent=capture))
         self.assertIsNone(capture.context["authorized_previous_lesson_summary"])
@@ -233,9 +252,9 @@ class GuidedPersistenceTests(unittest.TestCase):
         class FailingRuntime:
             def process(self, state, history): raise RuntimeError("simulated invalid JSON")
         with self.assertRaises(RuntimeError):
-            process_course_turn(self.db, conversation, content="今天六分", idempotency_key="retry-one-request", runtime_factory=FailingRuntime)
+            process_course_turn(self.db, conversation, content="6分", idempotency_key="retry-one-request", runtime_factory=FailingRuntime)
         self.assertEqual(len(conversation.messages), 2)
-        result = process_course_turn(self.db, conversation, content="今天六分", idempotency_key="retry-one-request", runtime_factory=preview_runtime)
+        result = process_course_turn(self.db, conversation, content="6分", idempotency_key="retry-one-request", runtime_factory=preview_runtime)
         self.assertEqual(result["course"]["current_step"], "learn")
         self.db.expire_all()
         messages = self.db.scalars(select(Message).where(Message.conversation_id == conversation.id)).all()

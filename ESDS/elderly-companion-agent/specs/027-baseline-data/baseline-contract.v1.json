@@ -1,0 +1,99 @@
+{
+  "contract_version": "cbt12-architecture-A/verified-config-1",
+  "source_run_id": "20261024-100022-A-baseline-verified-source-64bcab",
+  "started_at": "2026-10-24T10:00:22.558073+08:00",
+  "source_fingerprint": "b7bf1c96ff22f920c91d1eaeff8d6ab4305f42771a52202089dd8606dd80f803",
+  "suite_version": "cbt12-local/1",
+  "suite_sha256": "06c38dddf64775cc4812530dc86894202e3f3c91294652e6616f172eb0f19b23",
+  "lesson_versions": {
+    "lesson-1": "7.5-two-lesson-backend",
+    "lesson-2": "6.2-contrast-reply"
+  },
+  "api_configuration": {
+    "source": "explicit_env_file",
+    "env_file": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\.env",
+    "provider": "deepseek",
+    "inherited_conflict_setting_names": [
+      "DEEPSEEK_API_KEY"
+    ],
+    "credentials_recorded": false
+  },
+  "configuration_preflight": {
+    "client_key_matches_selected_file": true,
+    "file_unchanged": true,
+    "billing_account_identity": "user_to_verify_from_bill"
+  },
+  "provider": "deepseek",
+  "configured_model": "deepseek-flash",
+  "actual_model_names": [
+    "deepseek-flash"
+  ],
+  "policy": "none",
+  "interaction_reflection": "enabled",
+  "post_course_reflection": "retained; not exercised by local cases",
+  "transport": "non-streaming",
+  "max_calls": 12,
+  "actual_calls": 9,
+  "parameters": {
+    "temperature": 1.0,
+    "max_completion_tokens": 1200,
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "phase_inventory": {
+    "teaching": {
+      "calls": 4,
+      "prompt_tokens": 21820,
+      "completion_tokens": 564,
+      "total_tokens": 22384,
+      "request_elapsed_ms": 7845,
+      "prompt_hashes": [
+        "e8e815fa59fcf7e72e09a2b63747665be3c185c54ce082e18934209e5eb08b16"
+      ]
+    },
+    "case_review": {
+      "calls": 2,
+      "prompt_tokens": 1500,
+      "completion_tokens": 100,
+      "total_tokens": 1600,
+      "request_elapsed_ms": 2876,
+      "prompt_hashes": [
+        "1e6a99bd378bd7b0299f8b634444875c19ce2cd4b53c45d1ffc6b9457293cfb9"
+      ]
+    },
+    "interaction_reflection": {
+      "calls": 1,
+      "prompt_tokens": 2556,
+      "completion_tokens": 156,
+      "total_tokens": 2712,
+      "request_elapsed_ms": 2014,
+      "prompt_hashes": [
+        "e4fef1ed3f693b6b80e25483eadd4cec0577da03c33f2cd539f47da630d6bcca"
+      ]
+    },
+    "course_navigation": {
+      "calls": 1,
+      "prompt_tokens": 1533,
+      "completion_tokens": 90,
+      "total_tokens": 1623,
+      "request_elapsed_ms": 1921,
+      "prompt_hashes": [
+        "516234ea7536be5ef6a81d86f7ccc3928ef966045dccc27fc955b0a031965281"
+      ]
+    },
+    "lesson2_teaching": {
+      "calls": 1,
+      "prompt_tokens": 2794,
+      "completion_tokens": 88,
+      "total_tokens": 2882,
+      "request_elapsed_ms": 1776,
+      "prompt_hashes": [
+        "fd32a392d9fe49280cecdf09abdf98903e082acc8f5b879f248a06ac35b2c909"
+      ]
+    }
+  },
+  "quality_status": "baseline captured with critical E03 failure; not accepted as reliable product",
+  "billing_cost": null,
+  "billing_record_owner": "user"
+}

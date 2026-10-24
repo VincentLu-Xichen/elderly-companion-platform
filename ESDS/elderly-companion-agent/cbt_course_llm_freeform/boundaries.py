@@ -1,4 +1,5 @@
 """Personal-disclosure boundaries and explicitly sourced practice materials."""
+
 from __future__ import annotations
 
 import copy
@@ -30,8 +31,14 @@ scope只在confirm_all/allow_all时可cross_course，其余lesson。reply_length
 
 
 def new_flow():
-    return {"version": VERSION, "pending": None, "clarified": False, "local_block": False,
-            "once_authorized": False, "archived": []}
+    return {
+        "version": VERSION,
+        "pending": None,
+        "clarified": False,
+        "local_block": False,
+        "once_authorized": False,
+        "archived": [],
+    }
 
 
 def enabled(state):
@@ -39,7 +46,12 @@ def enabled(state):
 
 
 def candidate(text):
-    return bool(re.search(r"不.{0,5}(?:想|愿意|愿).{0,8}(?:说|谈|聊|讲|回忆|回答)|别.{0,8}(?:私事|个人|经历|这件事)|不要.{0,8}(?:个人|经历|私事|这件事)|不.{0,5}回忆|不方便.{0,5}(?:说|谈|聊)|隐私|不想聊这个|可以.{0,5}(?:问我|聊我|讲我的)|以后.{0,8}(?:问|例子)|愿意.{0,6}(?:经历|练习)|用.{0,5}(?:我的|自己).{0,5}(?:经历|事情)|这次.{0,5}(?:不说|不谈)|撤回.{0,5}(?:偏好|限制|边界)", text))
+    return bool(
+        re.search(
+            r"不.{0,5}(?:想|愿意|愿).{0,8}(?:说|谈|聊|讲|回忆|回答)|别.{0,8}(?:私事|个人|经历|这件事)|不要.{0,8}(?:个人|经历|私事|这件事)|不.{0,5}回忆|不方便.{0,5}(?:说|谈|聊)|隐私|不想聊这个|可以.{0,5}(?:问我|聊我|讲我的)|以后.{0,8}(?:问|例子)|愿意.{0,6}(?:经历|练习)|用.{0,5}(?:我的|自己).{0,5}(?:经历|事情)|这次.{0,5}(?:不说|不谈)|撤回.{0,5}(?:偏好|限制|边界)",
+            text,
+        )
+    )
 
 
 def source(state):
@@ -54,7 +66,11 @@ def blocked(state):
     flow = state.get("privacy", {})
     if flow.get("once_authorized"):
         return False
-    return flow.get("local_block", False) or flow.get("recovery", False) or (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit"
+    return (
+        flow.get("local_block", False)
+        or flow.get("recovery", False)
+        or (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit"
+    )
 
 
 def material(state):
@@ -62,14 +78,12 @@ def material(state):
     stories = {
         "lesson-1": STORY,
         "lesson-2": "小陈在公园等朋友，朋友迟到十分钟。他想到‘他是不是忘了约定’，感到失落，暂时没有联系朋友。",
-        "lesson-3": "小陈给朋友发消息，一天没收到回复，想到‘他肯定讨厌我’，感到失落。小陈还不知道朋友当天在做什么。",
-        "lesson-4": "小陈因朋友没有回消息而失落，想从此不联系。没有发现现实危险，也不知道未回复的原因。他考虑等一等，或发一句不催促的问候。",
-        "lesson-5": "小陈想恢复生活里的活动，计划周六下午在安全熟悉的公园散步五分钟；下雨改在家听音乐，不舒服就停下，尚未执行。" if path != "exposure" else "小陈在没有现实危险时回避去社区活动室，担心尴尬。他考虑先到门口停留一分钟，愿意再走近，随时可以退出；这只是计划。",
-        "lesson-6": "朋友一天没回复，小陈想到‘他一定讨厌我’。已知的是没有回复；并不知道原因，朋友以往也曾忙完才回复。小陈考虑‘现在还不能确定原因’，之后发一句不催促的问候；尚未执行。",
-        "lesson-7": "小陈睡前经常刷手机，入睡时间不稳定。他考虑先在睡前放下手机一小会儿，观察自己的舒适度；不采取限制睡眠或药物措施。" if path != "relaxation" else "小陈紧张时肩膀发紧，想在舒服的坐姿下自然呼吸半分钟，任何不适就停下；这只是待尝试的计划。",
-        "lesson-8": "小陈发现自己开始反复猜测朋友的态度，这是他的提醒信号。他准备先区分事实和猜测，再决定是否联系朋友，必要时找信任的人支持，一周后回看计划；尚未执行。",
     }
-    return {"kind": "fictional", "material_id": f"boundary-example:{lesson}:{path or 'default'}:1", "story": stories[lesson]}
+    return {
+        "kind": "fictional",
+        "material_id": f"boundary-example:{lesson}:{path or 'default'}:1",
+        "story": stories[lesson],
+    }
 
 
 def switch(state, kind):
@@ -78,8 +92,15 @@ def switch(state, kind):
         if kind == "personal" or source(state).get("material_id") == material(state)["material_id"]:
             return
     if state.get("draft_record") or state.get("confirmed_record"):
-        flow["archived"].append({"case_id": state["case_id"], "source": copy.deepcopy(source(state)), "blueprint": copy.deepcopy(state.get("blueprint")),
-                                 "record": copy.deepcopy(state["draft_record"]), "confirmed_record": copy.deepcopy(state.get("confirmed_record"))})
+        flow["archived"].append(
+            {
+                "case_id": state["case_id"],
+                "source": copy.deepcopy(source(state)),
+                "blueprint": copy.deepcopy(state.get("blueprint")),
+                "record": copy.deepcopy(state["draft_record"]),
+                "confirmed_record": copy.deepcopy(state.get("confirmed_record")),
+            }
+        )
     state["case_id"] = str(uuid.uuid4())
     state["draft_record"], state["confirmed_record"] = {}, None
     state["domain_candidates"], state["pattern_review"] = [], None
@@ -87,7 +108,16 @@ def switch(state, kind):
     if state.get("practice_flow"):
         state["practice_flow"]["unanswered"], state["practice_flow"]["deferred"] = {}, {}
     state["practice_source"] = material(state) if kind == "fictional" else {"kind": "personal"}
+    from cbt_course_llm_freeform import lesson2_flow
+
+    if lesson2_flow.enabled(state):
+        second = state["lesson2_flow"]
+        second.update(rating=None, case_review=None, relationship=None, deferred={})
+        second.pop("stop_probing", None)
+        if second["step"] == "model":
+            lesson2_flow.go(state, "personal")
     from cbt_course_llm_freeform import blueprint
+
     if blueprint.enabled(state):
         blueprint.reset_case(state)
         if state["stage"] == "learn":
@@ -97,21 +127,39 @@ def switch(state, kind):
 
 
 def ensure(state):
-    if blocked(state) and state["stage"] in {"learn", "practice", "review"}:
+    if blocked(state) and (
+        state["stage"] in {"learn", "practice", "review"} or state.get("lesson2_flow")
+    ):
         switch(state, "fictional")
 
 
 def context(state):
     flow = state.get("privacy", {})
-    return {"enabled": enabled(state), "blocked": blocked(state), "boundary": state.get("disclosure_boundary"),
-            "pending": flow.get("pending"), "clarified": flow.get("clarified", False),
-            "recovery": flow.get("recovery", False), "practice_source": source(state),
-            "alternative_material": material(state), "once_authorized": flow.get("once_authorized", False)}
+    return {
+        "enabled": enabled(state),
+        "blocked": blocked(state),
+        "boundary": state.get("disclosure_boundary"),
+        "pending": flow.get("pending"),
+        "clarified": flow.get("clarified", False),
+        "recovery": flow.get("recovery", False),
+        "practice_source": source(state),
+        "alternative_material": material(state),
+        "once_authorized": flow.get("once_authorized", False),
+    }
 
 
 def applicable(state):
     from cbt_course_llm_freeform import blueprint
-    return enabled(state) and (state["stage"] in {"practice", "review"} or blueprint.enabled(state) and state["stage"] == "learn") or bool(state.get("disclosure_boundary"))
+
+    return (
+        enabled(state)
+        and (
+            state["stage"] in {"practice", "review"}
+            or blueprint.enabled(state)
+            and state["stage"] == "learn"
+        )
+        or bool(state.get("disclosure_boundary"))
+    )
 
 
 def apply(state, note, latest):
@@ -119,28 +167,58 @@ def apply(state, note, latest):
     flow = state.get("privacy", {})
     intent = note.get("personal_intent", "none")
     pending = flow.get("pending")
-    if intent == "refuse_personal" and (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit":
+    if (
+        intent == "refuse_personal"
+        and (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit"
+    ):
         intent = "local_only"
     if pending and intent in {"none", "unclear", "local_only", "refuse_personal"}:
         intent = "local_only"  # No clear consent: never infer a global restriction.
     elif flow.get("recovery") and intent == "none":
         intent = "local_only"
     if intent == "confirm_all" and pending:
-        explicit_yes = re.search(r"^(?:好(?:的)?|可以|行|同意|是的|对|没问题)[，,。！!\s]*$|以后|今后|每节课|都用|都不问|都不要|全部", latest["content"])
-        if not explicit_yes or re.search(r"只是这次|仅本次|就这次|这次不|随便|不确定", latest["content"]):
+        explicit_yes = re.search(
+            r"^(?:好(?:的)?|可以|行|同意|是的|对|没问题)[，,。！!\s]*$|以后|今后|每节课|都用|都不问|都不要|全部",
+            latest["content"],
+        )
+        if not explicit_yes or re.search(
+            r"只是这次|仅本次|就这次|这次不|随便|不确定", latest["content"]
+        ):
             intent = "local_only"
-    if intent == "allow_all" and "这次" in latest["content"] and not re.search(r"以后|今后|每节课|全部|撤回", latest["content"]):
+    if (
+        intent == "allow_all"
+        and "这次" in latest["content"]
+        and not re.search(r"以后|今后|每节课|全部|撤回", latest["content"])
+    ):
         intent = "use_personal_once"
     if intent == "none":
         return False
     if not applicable(state):
         raise ValueError("Personal boundary event outside its allowed scope")
     flow = state.setdefault("privacy", new_flow())
-    if intent in {"confirm_all", "allow_all"} and not pending and not re.search(r"以后|今后|每次|所有课|每节课|之后|后面|撤回", latest["content"]):
+    if (
+        intent in {"confirm_all", "allow_all"}
+        and not pending
+        and not re.search(r"以后|今后|每次|所有课|每节课|之后|后面|撤回", latest["content"])
+    ):
         raise ValueError("Global personal preference has no explicit scope")
-    if intent == "local_only" and not pending and not flow.get("recovery") and not flow.get("clarified") and not (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit" and not re.search(r"这次|今天|现在|暂时|本次|这一回", latest["content"]):
+    if (
+        intent == "local_only"
+        and not pending
+        and not flow.get("recovery")
+        and not flow.get("clarified")
+        and not (state.get("disclosure_boundary") or {}).get("behavior") == "do_not_solicit"
+        and not re.search(r"这次|今天|现在|暂时|本次|这一回", latest["content"])
+    ):
         raise ValueError("Local-only refusal has no local scope evidence")
-    if intent == "refuse_personal" and not pending and (not re.search(r"以后|今后|之后|后面|每节课", note["reply"]) or not re.search(r"[？?]", note["reply"])):
+    if (
+        intent == "refuse_personal"
+        and not pending
+        and (
+            not re.search(r"以后|今后|之后|后面|每节课", note["reply"])
+            or not re.search(r"[？?]", note["reply"])
+        )
+    ):
         raise ValueError("Boundary confirmation was not actually asked")
     flow["recovery"] = False
     evidence = [{"message_id": latest["id"], "quote": note["quote"]}]
@@ -152,14 +230,32 @@ def apply(state, note, latest):
         flow["pending"] = None
         behavior = "pause_current"
     elif intent == "refuse_field":
-        from cbt_course_llm_freeform import practice_flow
-        field = practice_flow.current_field(state)
-        if field is None:
-            raise ValueError("No active field to decline")
-        state["practice_flow"]["deferred"][field] = {"status": "withheld", "source_message_ids": [latest["id"]]}
-        if practice_flow.ready(state):
-            state["stage"] = "review"
-        behavior = "decline_current_field"
+        from cbt_course_llm_freeform import lesson2_flow
+
+        if lesson2_flow.enabled(state):
+            field = lesson2_flow.focus(state)
+            if field is None:
+                raise ValueError("No active lesson-two field to decline")
+            state["lesson2_flow"]["deferred"][field] = {
+                "status": "withheld",
+                "source_message_ids": [latest["id"]],
+            }
+            if not lesson2_flow.missing(state):
+                lesson2_flow.go(state, "model")
+            behavior = "decline_current_field"
+        else:
+            from cbt_course_llm_freeform import practice_flow
+
+            field = practice_flow.current_field(state)
+            if field is None:
+                raise ValueError("No active field to decline")
+            state["practice_flow"]["deferred"][field] = {
+                "status": "withheld",
+                "source_message_ids": [latest["id"]],
+            }
+            if practice_flow.ready(state):
+                state["stage"] = "review"
+            behavior = "decline_current_field"
     elif intent == "unclear" and not flow.get("clarified"):
         flow["clarified"] = True
         status, behavior = "pending", "clarify_current_boundary"
@@ -182,9 +278,18 @@ def apply(state, note, latest):
         else:
             flow["pending"] = None
             scope = "cross_course" if intent == "confirm_all" else "lesson"
-    memory = {**note, "id": str(uuid.uuid4()), "kind": "personal_disclosure", "schema_version": VERSION,
-              "scope": scope, "status": status, "behavior": behavior, "evidence": evidence,
-              "lesson_id": state["lesson_id"], "effect": "not_measured"}
+    memory = {
+        **note,
+        "id": str(uuid.uuid4()),
+        "kind": "personal_disclosure",
+        "schema_version": VERSION,
+        "scope": scope,
+        "status": status,
+        "behavior": behavior,
+        "evidence": evidence,
+        "lesson_id": state["lesson_id"],
+        "effect": "not_measured",
+    }
     if status == "active" and scope == "cross_course":
         state["disclosure_boundary"] = {key: memory[key] for key in ("id", "scope", "behavior")}
     state["boundary_event"] = {"status": "accepted", "intent": intent, "memory": memory}

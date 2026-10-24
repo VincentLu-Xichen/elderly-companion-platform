@@ -14,16 +14,55 @@ class CourseMessageCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     content: str = Field(default="", max_length=2000)
     idempotency_key: str = Field(min_length=8, max_length=80)
-    action: Literal["chat", "edit_learning_goal", "skip_checkin", "confirm_record", "edit_record", "accept_practice", "decline_practice", "finish", "pause", "resume", "accept_carryover", "decline_carryover", "reuse_case", "accept_pattern", "reject_pattern", "unsure_pattern", "no_pattern", "choose_activation", "choose_exposure", "choose_sleep", "choose_relaxation", "change_path", "request_check_hint", "skip_check_question", "continue_after_check", "start_check_retry", "finish_check_retry", "confirm_learning_goal", "skip_learning_goal", "defer_practice_field", "decline_practice_field", "request_less_probing", "show_brief_explanation", "continue_practice_dialogue"] = "chat"
+    action: Literal[
+        "start_mood_check",
+        "chat",
+        "continue_lesson2",
+        "skip_lesson2_step",
+        "stop_lesson2_quiz",
+        "edit_learning_goal",
+        "skip_checkin",
+        "confirm_record",
+        "edit_record",
+        "accept_practice",
+        "decline_practice",
+        "finish",
+        "pause",
+        "resume",
+        "accept_carryover",
+        "decline_carryover",
+        "reuse_case",
+        "request_check_hint",
+        "skip_check_question",
+        "continue_after_check",
+        "start_check_retry",
+        "finish_check_retry",
+        "confirm_learning_goal",
+        "skip_learning_goal",
+        "defer_practice_field",
+        "decline_practice_field",
+        "request_less_probing",
+        "show_brief_explanation",
+        "continue_practice_dialogue",
+    ] = "chat"
     expected_revision: int | None = Field(default=None, ge=0)
 
 
 class Evidence(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    field: Literal["thought_belief", "emotion_intensity", "relationship_note", "mood", "learning_response", "situation", "thought", "emotion", "behavior", "awareness_note", "goal", "feedback",
-        "action_fit", "alternative_action", "safety_note", "activity_goal", "first_step", "when_where", "barrier_plan", "feared_prediction", "graded_steps",
-        "evidence_for", "evidence_against", "balanced_thought", "next_step", "sleep_pattern", "sleep_habit", "stress_cue", "relax_method",
-        "early_signal", "helpful_skill", "response_plan", "support_plan", "review_plan"]
+    field: Literal[
+        "thought_belief",
+        "emotion_intensity",
+        "relationship_note",
+        "mood",
+        "learning_response",
+        "situation",
+        "thought",
+        "emotion",
+        "behavior",
+        "goal",
+        "feedback",
+    ]
     value: str = Field(min_length=1, max_length=500)
     source_message_id: str = Field(min_length=1, max_length=80)
 
@@ -43,24 +82,24 @@ class TurnAssessment(BaseModel):
     signals: list[AssessmentSignal] = Field(default_factory=list, max_length=2)
 
 
-class PatternCandidate(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
-    category: Literal["mind_reading", "catastrophising", "overgeneralisation", "all_or_nothing"]
-    basis_field: Literal["thought", "awareness_note"]
-    basis_quote: str = Field(min_length=1, max_length=500)
-    explanation: str = Field(min_length=1, max_length=180)
-
-
 class TeachingDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     reply: str = Field(min_length=1, max_length=1200)
     observations: list[Evidence] = Field(default_factory=list, max_length=8)
     advance: bool = False
     assessment: TurnAssessment = Field(default_factory=TurnAssessment)
-    domain_candidates: list[PatternCandidate] = Field(default_factory=list, max_length=1)
+    # Accept the former empty field for offline-client compatibility; no classification is active.
+    domain_candidates: list[dict] = Field(default_factory=list, max_length=0)
     interaction: InteractionReflection | None = None
-    practice_origin: Literal["current_case", "personal_account", "different_case", "unclear"] = "current_case"
-    next_practice_field: Literal["situation", "thought", "thought_belief", "emotion", "emotion_intensity", "behavior"] | None = None
+    practice_origin: Literal["current_case", "personal_account", "different_case", "unclear"] = (
+        "current_case"
+    )
+    next_practice_field: (
+        Literal[
+            "situation", "thought", "thought_belief", "emotion", "emotion_intensity", "behavior"
+        ]
+        | None
+    ) = None
     case_options: list[str] = Field(default_factory=list, max_length=5)
 
 
@@ -68,7 +107,14 @@ class GuidanceReflection(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     update: Literal["replace", "no_change", "insufficient_evidence"]
     brief: str = Field(max_length=250)
-    strategy: Literal["continue_current", "clarify_missing_field", "rephrase_plainly", "ask_concrete_fact", "acknowledge_correction", "summarize_for_confirmation"]
+    strategy: Literal[
+        "continue_current",
+        "clarify_missing_field",
+        "rephrase_plainly",
+        "ask_concrete_fact",
+        "acknowledge_correction",
+        "summarize_for_confirmation",
+    ]
     focus_field: str | None = Field(default=None, max_length=40)
     source_message_ids: list[str] = Field(min_length=1, max_length=6)
     open_items: list[str] = Field(default_factory=list, max_length=3)
@@ -131,7 +177,13 @@ class AgentResult:
 
 @dataclass(frozen=True)
 class StageResult:
-    decision: GuidanceReflectionResult | ReplyDecision | CheckAnswerDecision | InteractionReflection | NavigationDecision
+    decision: (
+        GuidanceReflectionResult
+        | ReplyDecision
+        | CheckAnswerDecision
+        | InteractionReflection
+        | NavigationDecision
+    )
     completion: ChatCompletionResult
 
 

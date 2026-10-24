@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>第 {{ conversation.course.lesson.number }} 课 · {{ conversation.course.lesson.title }}</title>
   <link rel="stylesheet" href="/static/styles.css?v=20260731-course">
-  <link rel="stylesheet" href="/static/cbt_course/course.css?v=stage-focus-1">
+  <link rel="stylesheet" href="/static/cbt_course/course.css?v=xmind-layout-3">
   <script src="/static/cbt_course/stream.js?v=course-stream-1" defer></script>
-  <script src="/static/cbt_course/course.js?v=feedback-pilot-1" defer></script>
+  <script src="/static/cbt_course/course.js?v=skill-course-1" defer></script>
 </head>
 <body data-course-page="conversation" data-preview="{{ 'true' if preview_mode else 'false' }}">
   <main class="course-conversation guided-course" data-conversation-id="{{ conversation.id }}" data-completed="{{ 'true' if conversation.course.completed else 'false' }}">
@@ -25,8 +25,12 @@
     </div>
     <div class="guided-workspace">
       <section class="guided-dialogue" aria-label="课程对话">
+        <div class="course-materials">
+        <section id="course-skill-material" class="learning-check-card" aria-label="本课方法与共同练习" hidden></section>
         <section id="course-practice-material" class="learning-check-card" aria-label="虚构练习案例" hidden></section>
+        <section id="course-teacher-material" class="learning-check-card" aria-label="本课教学与心境检查" hidden></section>
         <section id="course-check-card" class="learning-check-card" aria-label="当前检验案例" hidden></section>
+        </div>
         <div class="conversation-stage">
           <div id="course-message-list" class="course-message-list" aria-live="polite">
             {% for message in conversation.messages %}
@@ -53,8 +57,10 @@
         </form>
       </section>
       <aside class="guided-notebook" aria-label="本课学习记录">
-        <div class="notebook-heading"><span class="notebook-kicker">带走这一点收获</span><h2>我的学习记录</h2><p>这里整理本次练习，核对后再继续。可使用下方操作；第 1 课末的目标、课后安排和总结也可直接用聊天表达选择。</p></div>
+        <div class="notebook-heading"><span class="notebook-kicker">带走这一点收获</span><h2>我的学习记录</h2><p>{% if conversation.course.skill_lesson %}本课先学方法、一起练习，再尝试使用。这里将共同练习与应用分开整理。可点击操作，也可以直接说继续、求助、跳过或修改；记录仍由您核对确认。{% elif conversation.course.lesson2 %}这里按环节整理学习记录。可点击下方操作，也可以说继续、跳过或修改；记录仍需您明确核对确认。{% else %}这里整理本次练习，核对后再继续。可使用下方操作；第 1 课末的目标、课后安排和总结也可直接用聊天表达选择。{% endif %}</p></div>
         <section id="course-carryover" class="notebook-section" hidden></section>
+        <section id="course-lesson2" class="notebook-section" aria-label="第二课活动记录" hidden></section>
+        <section id="course-skill-activities" class="notebook-section" aria-label="本课教学活动记录" hidden></section>
         <section class="notebook-section"><div class="notebook-section-heading"><h3 id="course-record-heading">这次的个人练习</h3><span id="record-confirmation" class="record-pill">待整理</span></div><dl id="course-record" class="guided-record"></dl><p id="record-empty" class="notebook-muted">聊到自己的例子时，记录会逐项出现在这里。</p></section>
         <section id="course-path-choice" class="notebook-section" hidden></section>
         <section id="course-pattern-review" class="notebook-section" hidden></section>
@@ -65,6 +71,7 @@
         <section id="course-learning-evidence" class="notebook-section" hidden></section>
         <div id="course-actions" class="guided-actions" aria-live="polite"></div>
         <section id="course-reflection" class="notebook-section" hidden></section>
+        <section id="course-homework" class="notebook-section" aria-label="课程练习" hidden></section>
         {% if preview_mode %}<details class="notebook-section course-debug"><summary>流程观察（体验环境）</summary><p class="notebook-muted">展示真实状态机与规则模拟调用，不代表真实模型效果。</p><pre id="course-debug-state"></pre></details>{% endif %}
         <p class="notebook-footer">本课用于学习与研究。完成一次练习，和在生活中熟练运用，是不同的进展。</p>
       </aside>

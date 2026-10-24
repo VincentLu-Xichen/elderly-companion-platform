@@ -1,0 +1,60 @@
+{
+  "suite_version": "cbt12-local/1",
+  "scope": "合成局部固定输入；非整课、非临床测量、非微调训练集",
+  "cases": [
+    {
+      "id": "E01-a",
+      "title": "一次表达四要素及评分",
+      "lesson": "lesson-1",
+      "fixture": "first-learn",
+      "turns": ["昨天数学考试最后一道题没做出来。我当时想，别人肯定都会，只有我不会；我对这个想法的相信程度是0分。心情是担心，情绪强度6分。考完我一直翻答案。"],
+      "checks": ["four_fields", "zero_rating", "not_confirmed"],
+      "human_review": ["承接担心而不是评价想法积极与否", "已说内容直接整理，不逐项重问", "继续覆盖概念与模型回顾，不把收齐字段当成已经掌握"]
+    },
+    {
+      "id": "E03-a",
+      "title": "暂时换话题再返回原案例",
+      "lesson": "lesson-1",
+      "fixture": "first-practice",
+      "turns": ["先不说考试了，今天室友在我休息时一直外放视频，我现在很烦，只想先聊一下这件事。", "谢谢，我们回到刚才考试的例子吧。我当时的做法是考完一直翻答案。"],
+      "checks": ["same_case", "same_situation", "not_confirmed"],
+      "human_review": ["第一轮先回应室友这件事，不立刻强拉回考试", "保留原案例，不把室友事实填进考试记录", "第二轮理解明确返回，采用已表达的做法；过渡自然"]
+    },
+    {
+      "id": "E04-a",
+      "title": "投诉追问后同例停问",
+      "lesson": "lesson-1",
+      "fixture": "first-practice",
+      "turns": ["你为什么一直追问我？事情、想法和心情我已经说了，别再问我做了什么了。", "记录准确，可以继续。"],
+      "checks": ["same_case", "same_situation", "stopped_probing", "no_invented_behavior"],
+      "human_review": ["礼貌承认追问造成负担，立即停问", "围绕考试已有内容整理，不另换事件", "下一轮仍遵守停问，明确确认可以推进；不把缺项解释为能力差"]
+    },
+    {
+      "id": "E06-a",
+      "title": "核对上下文中的确定确认",
+      "lesson": "lesson-1",
+      "fixture": "first-review",
+      "turns": ["准确"],
+      "checks": ["record_confirmed", "assessment_stage", "zero_calls"],
+      "human_review": ["直接进入辨认练习，不再要求重复确认", "不把记录确认扩大为跨课授权或整课完成"]
+    },
+    {
+      "id": "E06-b",
+      "title": "四题反馈后自然提出目标",
+      "lesson": "lesson-1",
+      "fixture": "first-check-feedback",
+      "turns": ["我的练习目标就是想减少焦虑，更积极地面对生活。"],
+      "checks": ["goal_stage", "goal_recorded", "goal_not_confirmed"],
+      "human_review": ["承接改善方向，协助具体化，不重复补练话术", "不把愿望直接标记为已确认目标或改善效果"]
+    },
+    {
+      "id": "E07-a",
+      "title": "小雨对照后的自我比较",
+      "lesson": "lesson-2",
+      "fixture": "second-contrast",
+      "turns": ["我发现小雨心态比我好，我是不是想得太糟糕了？"],
+      "checks": ["rain_not_personal", "not_confirmed"],
+      "human_review": ["先承接自我比较中的感受与疑问", "说明同一事情可以有不同理解，不强迫积极、不评价情绪对错", "随后自然连接捕捉方法与三栏，不只贴下一步固定题目"]
+    }
+  ]
+}

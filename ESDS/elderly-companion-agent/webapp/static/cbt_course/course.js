@@ -65,6 +65,63 @@ document.addEventListener("DOMContentLoaded", () => {
   let busy = false;
   let retry = null;
   let pollCount = 0;
+  let diaryRetry = null;
+
+  function renderDiaries(parent, entries) {
+    entries.forEach(entry => {
+      const group = courseElement("details");
+      group.append(courseElement("summary", `${entry.created_at.slice(0,10)} · ${entry.source_kind === "fictional" ? "虚构练习" : "本人课后记录"}`));
+      const labels = { situation: "情境", thought: "自动思维", emotion: "情绪", behavior: "行为" };
+      Object.keys(labels).filter(key => key in (entry.fields || {})).forEach(key => group.append(courseElement("p", `${labels[key]}：${entry.fields[key] || "未记录"}`)));
+      parent.append(group);
+    });
+  }
+
+  function renderHomework() {
+    const box = document.getElementById("course-homework");
+    if (!box) return;
+    box.hidden = !course.completed || !course.teacher_flow;
+    if (box.hidden) return;
+    if (box.dataset.ready) return;
+    box.dataset.ready = "true";
+    box.append(courseElement("h3", "课程练习 · 课后记录"), courseElement("p", course.lesson.id === "lesson-1" ? "按情境、想法、情绪、行为记录一件事。暂时想不到的部分可以留空。" : "用情境、自动思维、情绪三栏记录一件事。"));
+    const list = courseElement("div");
+    renderDiaries(list, session.homework_entries || []); box.append(list);
+    if (session.read_only) return;
+    const diaryForm = courseElement("form");
+    const sourceLabel = courseElement("label", "这份记录来自：");
+    const source = courseElement("select"); source.name = "source_kind";
+    [["personal","自己的经历"],["fictional","虚构案例"]].forEach(([value,label]) => {
+      const option = courseElement("option", label); option.value = value; source.append(option);
+    });
+    source.value = course.practice_source?.kind === "fictional" ? "fictional" : "personal";
+    sourceLabel.append(source); diaryForm.append(sourceLabel);
+    const fields = {};
+    const labels = {situation:"情境：具体发生了什么",thought:"自动思维：当时怎样解释",emotion:"情绪：当时有什么感受",behavior:"行为：实际做了什么"};
+    Object.keys(labels).filter(key => course.lesson.id === "lesson-1" || key !== "behavior").forEach(key => {
+      const label = courseElement("label", labels[key]); const field = courseElement("textarea");
+      field.maxLength = 500; field.rows = 2; field.required = key === "situation"; field.name = key;
+      label.append(field); diaryForm.append(label); fields[key] = field;
+    });
+    const save = courseElement("button", "保存这份课后记录", "guided-action"); save.type = "submit";
+    const status = courseElement("p"); status.setAttribute("role","status");
+    diaryForm.append(save,status); box.append(diaryForm);
+    diaryForm.addEventListener("submit", async event => {
+      event.preventDefault(); save.disabled = true;
+      const values = Object.fromEntries(Object.entries(fields).map(([key,field]) => [key,field.value]));
+      const data = {source_kind:source.value,...values}; const fingerprint = JSON.stringify(data);
+      if (!diaryRetry || diaryRetry.fingerprint !== fingerprint) diaryRetry = {fingerprint,key:crypto.randomUUID()};
+      try {
+        const result = await courseApi(`${endpoint}/homework`, {method:"POST",body:JSON.stringify({...data,idempotency_key:diaryRetry.key})});
+        list.replaceChildren(); renderDiaries(list,result.entries); session.homework_entries = result.entries;
+        const current = {source_kind:source.value,...Object.fromEntries(Object.entries(fields).map(([key,field]) => [key,field.value]))};
+        const unchanged = JSON.stringify(current) === fingerprint;
+        if (unchanged) Object.values(fields).forEach(field => {field.value="";});
+        diaryRetry = null;
+        status.textContent = "已加密保存，可在这里回看；这是您的记录，不代表系统核验过执行或效果。" + (unchanged ? "" : "您刚输入的新草稿仍保留在下方。");
+      } catch (error) {status.textContent = error.message;} finally {save.disabled = false;}
+    });
+  }
 
   function button(text, action, parent) {
     const element = courseElement("button", text, "guided-action");
@@ -78,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function render(next) {
     const stageChanged = course.current_step !== next.current_step;
     course = next;
+    renderHomework();
     const blocked = session.read_only || course.completed || course.safety_paused || course.paused;
     input.disabled = busy || blocked || course.needs_path_choice;
     send.disabled = busy || blocked || course.needs_path_choice;
@@ -99,15 +157,93 @@ document.addEventListener("DOMContentLoaded", () => {
     const focus = document.getElementById("course-stage-focus");
     focus.replaceChildren();
     focus.hidden = !course.stage_focus;
-    if (!focus.hidden) focus.append(courseElement("strong", `现在练什么：${course.stage_focus.task}`),
+    if (!focus.hidden) focus.append(courseElement("strong", `现在练什么：${course.stage_focus.task || course.lesson2?.label}`),
       courseElement("p", `为什么练：${course.stage_focus.purpose}`), courseElement("p", `接下来：${course.stage_focus.exit}`));
     const practice = document.getElementById("course-practice-options");
+    const skillMaterial = document.getElementById("course-skill-material");
+    const skillActivities = document.getElementById("course-skill-activities");
+    if (skillMaterial && skillActivities) {
+      const skill = course.skill_lesson;
+      const wasOpen = skillMaterial.querySelector("details")?.open || false;
+      skillMaterial.replaceChildren(); skillActivities.replaceChildren();
+      skillMaterial.hidden = !skill;
+      skillActivities.hidden = !skill;
+      if (skill) {
+        const details = courseElement("details"); details.open = wasOpen;
+        details.append(courseElement("summary", "本课方法与示范 · 点击回看"));
+        skill.materials.forEach(item => details.append(courseElement("h3",item.title),courseElement("p",item.text)));
+        if (skill.guided_question) details.append(courseElement("h3","共同练习（获得教学帮助）"),courseElement("p",skill.guided_question));
+        skillMaterial.append(details);
+        skillActivities.append(courseElement("h3","本课教学活动"),courseElement("p","示范、共同练习与应用分别记录；完成不等于独立掌握。","notebook-muted"));
+        skill.activities.forEach(item => skillActivities.append(courseElement("p", item.status === "participated_with_support" ? `共同练习：${item.value}` : "共同练习：本次暂留或未观察")));
+        Object.entries(skill.deferred).forEach(([field]) => skillActivities.append(courseElement("p", `暂留：${skill.deferred_labels[field]}`)));
+        if (skill.ladder_record) skillActivities.append(courseElement("h3", skill.scope === "fictional" ? "虚构案例的排序（待尝试计划）" : "本人表达的排序（未自动换算分数）"), courseElement("p",skill.ladder_record.value));
+      }
+    }
+    const teaching = document.getElementById("course-teacher-material");
+    if (teaching) {
+      const openDetails = new Map(Array.from(teaching.querySelectorAll("details[data-material-key]"), item => [item.dataset.materialKey, item.open]));
+      teaching.replaceChildren();
+      const flow = course.teacher_flow;
+      teaching.hidden = !flow;
+      if (flow) {
+        if (flow.overview_pending) {
+          teaching.append(courseElement("h3", "八次课程 · 先了解学习内容"));
+          const overview = courseElement("ol");
+          (flow.overview || []).forEach(item => {
+            const row = courseElement("li"); row.append(courseElement("strong",item.title),courseElement("p",item.practice)); overview.append(row);
+          });
+          teaching.append(overview);
+          if (!blocked) button("已看完，开始心境检查", "start_mood_check", teaching);
+        } else if (course.current_step === "check_in") {
+          teaching.append(courseElement("h3", "心境检查 · 上周的整体状态"), courseElement("p", flow.mood_question));
+          const scores = courseElement("div", "", "weekly-score-buttons");
+          for (let i = 1; i <= 10; i++) {
+            const score = courseElement("button", String(i), "guided-action");
+            score.type = "button"; score.disabled = busy || blocked;
+            score.setAttribute("aria-label", `上周整体状态${i}分`);
+            score.addEventListener("click", () => { input.value = `${i}分`; submit("chat"); });
+            scores.append(score);
+          }
+          teaching.append(scores);
+        } else {
+          teaching.append(courseElement("h3", "本课教学材料"));
+          if (flow.weekly_mood.status === "provided") teaching.append(courseElement("p", `上周整体状态：${flow.weekly_mood.value}/10（与本次事件的情绪强度分开记录）`, "notebook-muted"));
+          if (flow.automatic_thought_teaching && ["rain","contrast","rain_insight","personal","model","plan","summary","completed"].includes(course.current_step)) {
+            teaching.append(courseElement("p", flow.automatic_thought_teaching));
+          }
+          (flow.cards || []).forEach((card, i) => {
+            const detail = courseElement("details");
+            detail.dataset.materialKey = card.id || `${card.title}:${card.help}:${i}`;
+            detail.open = openDetails.get(detail.dataset.materialKey) ?? false;
+            detail.append(courseElement("summary", `${card.help ? "换一种说明：" : ""}${card.title}`));
+            ["definition","example","explanation","expression","vocabulary"].forEach(key => {
+              if (card[key]) detail.append(courseElement("p", card[key]));
+            });
+            teaching.append(detail);
+          });
+          if (["review","model","assessment","check_feedback"].includes(course.current_step)) teaching.append(courseElement("p", flow.model_explanation));
+          if (course.current_step === "learning_goal") {
+            teaching.append(courseElement("h4", "课程提供的目标参考"));
+            const goals = courseElement("ol");
+            (flow.goal_examples || []).forEach(text => goals.append(courseElement("li",text)));
+            teaching.append(goals,courseElement("p","这些是原课程的参考方向和频率，不是效果承诺或必须全部完成的任务。请结合自己的需要选择、修改，也可以暂不设置。"));
+          }
+          const contents = courseElement("details");
+          contents.dataset.materialKey = "all-teaching";
+          contents.open = openDetails.get("all-teaching") ?? false;
+          contents.append(courseElement("summary", "本课教学材料 · 点击展开或收起"));
+          while (teaching.firstChild) contents.append(teaching.firstChild);
+          teaching.append(contents);
+        }
+      }
+    }
     const fictional = course.practice_source?.kind === "fictional";
     document.getElementById("course-record-heading").textContent = fictional ? "这次的案例练习" : "这次的个人练习";
     document.getElementById("record-empty").textContent = fictional ? "这里只记录您对虚构案例的辨认，不是您的个人经历。" : "聊到自己的例子时，记录会逐项出现在这里。";
     const material = document.getElementById("course-practice-material");
     material.replaceChildren();
-    material.hidden = !fictional || course.boundary_confirmation_pending || !["practice", "review"].includes(course.current_step);
+    material.hidden = !fictional || course.boundary_confirmation_pending || !["practice", "review", "personal", "model", "application", "pattern"].includes(course.current_step);
     if (!material.hidden) material.append(courseElement("h3", "虚构案例 · 一起练习"), courseElement("p", course.practice_source.story));
     practice.replaceChildren();
     practice.hidden = blocked || course.show_practice_controls === false || course.boundary_confirmation_pending || course.current_step !== "practice" || !course.personal_practice?.current_field;
@@ -122,6 +258,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!course.natural_feedback_enabled && course.interaction_adaptation?.status === "explanation_shown") button("继续聊", "continue_practice_dialogue", practice);
         else if (!course.natural_feedback_enabled) button("我想少解释一点", "request_less_probing", practice).className = "guided-text-button";
       }
+    }
+    if (!blocked && course.lesson.id === "lesson-1" && course.current_step === "review") {
+      practice.hidden = false;
+      practice.append(courseElement("span", "没有补充也可以先核对记录，确认后继续。"));
+      button("核对无误，继续", "confirm_record", practice);
+      button("修改记录", "edit_record", practice);
     }
     const record = document.getElementById("course-record");
     record.replaceChildren();
@@ -157,6 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (contents.tagName === "DETAILS") contents.append(courseElement("summary", "展开查看这课的记录"));
         contents.append(courseElement("p", values, "carryover-quote"));
         if (!bundle && summary.practice_plan?.text) contents.append(courseElement("p", summary.practice_plan.text, "notebook-muted"));
+        if (!bundle && course.lesson.id === "lesson-2") contents.append(courseElement("p", "选择使用后，本课也会回顾上次课程练习中最近三条日记（如有）；不选择则不会传入教学上下文。", "notebook-muted"));
         if (summary.practice_scope?.description) contents.append(courseElement("p", summary.practice_scope.description, "notebook-muted"));
         memory.append(contents);
         if (["action_plan", "coping_plan"].includes(summary.artifact_kind)) memory.append(courseElement("p", "已确认的是计划，实际运用与效果尚待反馈。", "notebook-muted"));
@@ -169,7 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const paths = document.getElementById("course-path-choice");
     paths.replaceChildren();
-    paths.hidden = !course.path_choices?.length;
+    paths.hidden = !course.path_choices?.length || Boolean(course.skill_lesson && !course.path && course.current_step !== "choose_path");
     if (!paths.hidden) {
       paths.append(courseElement("h3", course.path_label ? "本课选择的路径" : "先选本课想探索的路径"));
       if (course.path_label) paths.append(courseElement("p", course.path_label, "carryover-quote"));
@@ -182,14 +325,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const patterns = document.getElementById("course-pattern-review");
     patterns.replaceChildren();
-    patterns.hidden = !course.pattern_required || !["practice", "review", "plan", "summary", "completed"].includes(course.current_step);
+    patterns.hidden = !course.pattern_required || !["practice", "review", "plan", "summary", "completed", "pattern"].includes(course.current_step);
     if (!patterns.hidden) {
       patterns.append(courseElement("h3", "这个解释适合这次经历吗？"));
       const candidate = course.domain_candidates?.[0];
       if (candidate) patterns.append(courseElement("p", candidate.label), courseElement("p", candidate.explanation, "notebook-muted"));
       else patterns.append(courseElement("p", "目前没有必须接受的分类解释，可以保留不确定或没有明显模式。", "notebook-muted"));
       if (course.pattern_review) patterns.append(courseElement("p", `我的选择：${course.pattern_choices[course.pattern_review.status]}`, "carryover-quote"));
-      if (!blocked && course.current_step === "review") {
+      if (!blocked && course.current_step === "review" && !course.skill_lesson) {
         if (candidate) { button("这次像这种情况", "accept_pattern", patterns); button("这个解释不太符合", "reject_pattern", patterns); }
         button("暂时不确定", "unsure_pattern", patterns);
         button("没有明显的思维模式", "no_pattern", patterns);
@@ -274,10 +417,73 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!evidence.hidden) {
       evidence.append(courseElement("h3", "这次的进展"), courseElement("p", course.personal_practice_scope?.description || `完成一次引导下的${course.record_kind || "学习记录"}整理和本人核对。`), courseElement("p", "生活中运用与实际效果：尚待之后的本人反馈。", "notebook-muted"));
     }
+    const second = document.getElementById("course-lesson2");
+    second.replaceChildren();
+    second.hidden = !course.lesson2;
+    if (course.lesson2) {
+      const activity = course.lesson2;
+      if (course.current_step === "homework") {
+        second.append(courseElement("h3", "回顾上次课后练习"));
+        if (activity.previous_diaries?.length) renderDiaries(second, activity.previous_diaries);
+        else second.append(courseElement("p", "当前没有获准引用的课后记录；这不代表您没有练习，可以按自己的实际情况说说。", "notebook-muted"));
+      }
+      const homework = activity.homework;
+      second.append(courseElement("h3", "第二课 · 活动与来源"));
+      const homeworkLabels = {unknown:"尚未回顾", skipped:"本次跳过回顾", previous_declined:"上课已选择不安排", not_planned:"本人表示未安排", not_attempted:"本人表示未尝试", self_reported_attempt:"本人报告曾尝试"};
+      second.append(courseElement("p", `课后尝试：${homeworkLabels[homework.status] || "待本人说明"}；用于调整教学，不计服从分。`, "notebook-muted"));
+      if (homework.homework_report) second.append(courseElement("p", homework.homework_report.value));
+      if (activity.quiz.answers.length) {
+        const details = courseElement("details");
+        details.append(courseElement("summary", "三题复习：原答、帮助与反馈"));
+        activity.quiz.answers.forEach((answer) => details.append(courseElement("p", `${answer.question_index+1}. 原答：${answer.answer || "未作答"}；${answer.reason} ${answer.assisted ? "有提示。" : ""}${answer.prior_feedback ? "此前已有逐题反馈。" : ""}`)));
+        second.append(details);
+      }
+      if (["rain","contrast","rain_insight","personal","model","plan","summary","completed"].includes(course.current_step)) {
+        const rainPanel = courseElement("details");
+        rainPanel.open = ["rain", "contrast", "rain_insight"].includes(course.current_step);
+        rainPanel.append(courseElement("summary", "雨天教学对照 · 想象练习"), courseElement("p", activity.rain_story));
+        const table = courseElement("table");
+        table.setAttribute("aria-label", "同一雨天情境的想法和情绪对照");
+        const head = courseElement("tr");
+        ["来源", "想法", "情绪"].forEach((label) => head.append(courseElement("th", label)));
+        table.append(head);
+        const row = (label, thought, emotion) => {
+          const tr = courseElement("tr");
+          [label, thought || "未表达", emotion || "未表达"].forEach((value) => tr.append(courseElement("td", value)));
+          table.append(tr);
+        };
+        row("您在想象中的回答", activity.rain.fields.thought?.value, activity.rain.fields.emotion?.value);
+        if (activity.contrast) row("小雨（预设教学示范）", activity.contrast.thought, activity.contrast.emotion);
+        const tableWrap = courseElement("div", "", "lesson2-table-wrap");
+        tableWrap.append(table);
+        rainPanel.append(tableWrap, courseElement("p", "这里的感受不判对错，也不作为您的真实经历或稳定思维习惯。", "notebook-muted"));
+        second.append(rainPanel);
+      }
+      if (course.record?.length) {
+        second.append(courseElement("h4", fictional ? "虚构案例三栏 · 辨认记录" : "当前个人案例 · 三栏记录"));
+        const labels = {situation:"情境", thought:"想法", emotion:"情绪"};
+        const diagram = courseElement("div", "", "lesson2-triad");
+        diagram.setAttribute("aria-label", "三栏模型：情境、想法和情绪；联系尚待本人核对");
+        ["situation", "thought", "emotion"].forEach((key) => {
+          const node = courseElement("div", "", "lesson2-triad-node");
+          node.append(courseElement("strong", labels[key]), courseElement("p", course.record.find((field) => field.field === key)?.value || "本次未提供"));
+          diagram.append(node);
+        });
+        second.append(diagram);
+        if (activity.rating) second.append(courseElement("p", `本人评分：${activity.rating.target} ${activity.rating.value}/10`));
+        if (activity.relationship) second.append(courseElement("p", `本人对联系的看法：${activity.relationship.value}`));
+        if (activity.case_review?.status === "ready") second.append(courseElement("p", activity.case_review.summary));
+        second.append(courseElement("p", "三栏用于一起核对可能的联系；不代表已经证实单向因果或情绪改善。", "notebook-muted"));
+      }
+    }
     const actions = document.getElementById("course-actions");
     actions.replaceChildren();
-    if (!blocked) {
-      if (course.current_step === "check_in") button(course.blueprint ? "开始本课，暂不评分" : "先看例子，不评分", "skip_checkin", actions);
+    if (!blocked && course.skill_lesson) {
+      course.skill_lesson.actions.forEach((item) => button(item.label, item.action, actions));
+    } else if (!blocked && course.lesson2) {
+      course.lesson2.actions.forEach((item) => button(item.label, item.action, actions));
+    } else if (!blocked) {
+      if (course.current_step === "check_in" && !course.teacher_flow?.overview_pending) button(course.blueprint ? "这次暂不评分" : "先看例子，不评分", "skip_checkin", actions);
       if (course.can_reuse_case) button("沿用上一课这件事", "reuse_case", actions);
       if (course.current_step === "review") {
         button(fictional ? "确认练习记录" : "确认这份记录", "confirm_record", actions).disabled = busy || (course.pattern_required && !course.pattern_review);
@@ -356,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!retryRequest && action === "chat" && !content) return;
     const payload = retryRequest?.payload || { content, action, expected_revision: course.revision, idempotency_key: crypto.randomUUID() };
     const controlLabels = { request_less_probing: "我想少解释一点", show_brief_explanation: "直接看解释", continue_practice_dialogue: "继续聊", defer_practice_field: "这一项暂时想不起", decline_practice_field: "这一项先不谈", request_check_hint: "需要一点提示", skip_check_question: "这题先跳过", continue_after_check: "继续，设置练习目标", start_check_retry: "换个例子再练一次", finish_check_retry: "结束这次补练", confirm_learning_goal: "确认这个目标", skip_learning_goal: "暂不设置目标" };
-    const userMessage = retryRequest?.userMessage || appendCourseMessage("learner", content || course.practice_control_labels?.[action] || controlLabels[action] || ({ confirm_record: "确认这份记录", edit_record: "我要修改记录", accept_practice: "愿意试一次", decline_practice: "这次不安排", finish: "完成本课", pause: "暂停课程", resume: "继续课程", skip_checkin: "先看例子", accept_carryover: "使用已确认的课程摘要", decline_carryover: "本课重新开始", reuse_case: "沿用上一课这件事", accept_pattern: "这次像这种情况", reject_pattern: "这个解释不太符合", unsure_pattern: "暂时不确定", no_pattern: "没有明显的思维模式", choose_activation: "选择行为激活", choose_exposure: "选择行为暴露", choose_sleep: "选择睡眠路径", choose_relaxation: "选择放松路径", change_path: "重新选择路径" })[action]);
+    const userMessage = retryRequest?.userMessage || appendCourseMessage("learner", content || course.skill_lesson?.actions.find((item) => item.action === action)?.label || course.lesson2?.actions.find((item) => item.action === action)?.label || course.practice_control_labels?.[action] || controlLabels[action] || ({ start_mood_check: "已看完", confirm_record: "确认这份记录", edit_record: "我要修改记录", accept_practice: "愿意试一次", decline_practice: "这次不安排", finish: "完成本课", pause: "暂停课程", resume: "继续课程", skip_checkin: "暂不评分", accept_carryover: "使用已确认的课程摘要", decline_carryover: "本课重新开始", reuse_case: "沿用上一课这件事", accept_pattern: "这次像这种情况", reject_pattern: "这个解释不太符合", unsure_pattern: "暂时不确定", no_pattern: "没有明显的思维模式", choose_activation: "选择行为激活", choose_exposure: "选择行为暴露", choose_sleep: "选择睡眠路径", choose_relaxation: "选择放松路径", change_path: "重新选择路径" })[action]);
     // The request owns its snapshot; only a fresh chat submission consumes the draft.
     // Controls and retries must preserve any newer, unsent draft.
     if (!retryRequest && action === "chat") {

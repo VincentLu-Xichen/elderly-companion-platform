@@ -11,16 +11,16 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
-from cbt_course_llm_freeform.catalog import LESSON_1_ID, LESSON_2_ID, lesson_version, require_available_course
+from cbt_course_llm_freeform.catalog import (
+    LESSON_1_ID,
+    LESSON_2_ID,
+    lesson_version,
+    require_available_course,
+    is_active_lesson,
+)
 from cbt_course_llm_freeform.lesson_1 import INITIAL_MESSAGE as LESSON_1_INITIAL_MESSAGE
 from cbt_course_llm_freeform.lesson_1 import STATIC_ATTACHMENTS
 from cbt_course_llm_freeform.lesson_2 import INITIAL_MESSAGE as LESSON_2_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_3 import INITIAL_MESSAGE as LESSON_3_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_4 import INITIAL_MESSAGE as LESSON_4_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_5 import INITIAL_MESSAGE as LESSON_5_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_6 import INITIAL_MESSAGE as LESSON_6_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_7 import INITIAL_MESSAGE as LESSON_7_INITIAL_MESSAGE
-from cbt_course_llm_freeform.lesson_8 import INITIAL_MESSAGE as LESSON_8_INITIAL_MESSAGE
 from cbt_course_llm_freeform.prompt import prompt_for_lesson
 from cbt_course_llm_freeform.runtime import FreeformCourseRuntime, course_payload, new_course_state
 from cbt_course_llm_freeform.schemas import TurnResult
@@ -37,27 +37,37 @@ from webapp.security import decrypt_json, decrypt_text, encrypt_json, encrypt_te
 AGENT_VERSION = "course-guided-v3"
 
 
+def is_current_course(conversation: Conversation) -> bool:
+    return (
+        is_active_lesson(conversation.lesson_id)
+        and conversation.agent_version == AGENT_VERSION
+        and conversation.lesson_version == lesson_version(conversation.lesson_id)
+    )
+
+
 def course_prompt_hash(lesson_id: str = LESSON_1_ID) -> str:
     return hashlib.sha256(prompt_for_lesson(lesson_id).encode("utf-8")).hexdigest()
 
 
 def _initial_message(lesson_id: str) -> str:
     require_available_course(lesson_id)
-    return {"lesson-1": LESSON_1_INITIAL_MESSAGE, "lesson-2": LESSON_2_INITIAL_MESSAGE, "lesson-3": LESSON_3_INITIAL_MESSAGE,
-            "lesson-4": LESSON_4_INITIAL_MESSAGE, "lesson-5": LESSON_5_INITIAL_MESSAGE, "lesson-6": LESSON_6_INITIAL_MESSAGE,
-            "lesson-7": LESSON_7_INITIAL_MESSAGE, "lesson-8": LESSON_8_INITIAL_MESSAGE}[lesson_id]
+    return {LESSON_1_ID: LESSON_1_INITIAL_MESSAGE, LESSON_2_ID: LESSON_2_INITIAL_MESSAGE}[lesson_id]
 
 
 def _active_key(participant_id: str, lesson_id: str) -> str:
     return f"{participant_id}:{lesson_id}:{lesson_version(lesson_id)}"
 
 
-def create_or_resume_course(db: Session, *, participant_id: str, lesson_id: str) -> tuple[Conversation, bool]:
+def create_or_resume_course(
+    db: Session, *, participant_id: str, lesson_id: str
+) -> tuple[Conversation, bool]:
     require_available_course(lesson_id)
     active_key = _active_key(participant_id, lesson_id)
     existing = db.scalar(select(Conversation).where(Conversation.active_course_key == active_key))
     if existing:
-        if existing.agent_version == AGENT_VERSION and existing.lesson_version == lesson_version(lesson_id):
+        if existing.agent_version == AGENT_VERSION and existing.lesson_version == lesson_version(
+            lesson_id
+        ):
             return existing, True
         existing.active_course_key = None
         db.commit()
@@ -100,7 +110,9 @@ def create_or_resume_course(db: Session, *, participant_id: str, lesson_id: str)
         db.commit()
     except IntegrityError:
         db.rollback()
-        existing = db.scalar(select(Conversation).where(Conversation.active_course_key == active_key))
+        existing = db.scalar(
+            select(Conversation).where(Conversation.active_course_key == active_key)
+        )
         if existing:
             return existing, True
         raise
@@ -108,7 +120,9 @@ def create_or_resume_course(db: Session, *, participant_id: str, lesson_id: str)
     return conversation, False
 
 
-def get_owned_course(db: Session, *, conversation_id: str, participant_id: str) -> Conversation | None:
+def get_owned_course(
+    db: Session, *, conversation_id: str, participant_id: str
+) -> Conversation | None:
     conversation = db.scalar(
         select(Conversation).where(
             Conversation.id == conversation_id,
@@ -144,9 +158,11 @@ def _model_history(conversation: Conversation) -> list[dict[str, str]]:
 
 
 def course_conversation_payload(conversation: Conversation) -> dict[str, Any]:
+    from cbt_course_llm_freeform.homework import entries
+
     state = decrypt_json(conversation.agent_state_encrypted)
     db = object_session(conversation)
-    if db is not None:
+    if db is not None and is_active_lesson(conversation.lesson_id):
         refresh_carryover(db, state, conversation.participant_id, AGENT_VERSION)
         state["interaction_memories"] = load_memories(db, conversation)
         state["disclosure_boundary"] = load_boundary(db, conversation)
@@ -157,12 +173,13 @@ def course_conversation_payload(conversation: Conversation) -> dict[str, Any]:
         "lesson_id": conversation.lesson_id,
         "lesson_version": conversation.lesson_version,
         "status": conversation.status,
-        "read_only": conversation.agent_version != AGENT_VERSION or conversation.lesson_version != lesson_version(str(conversation.lesson_id)),
+        "read_only": not is_current_course(conversation),
         "started_at": conversation.started_at.isoformat(),
         "ended_at": conversation.ended_at.isoformat() if conversation.ended_at else None,
         "messages": [_message_payload(message) for message in conversation.messages],
         "course": course_payload(state),
         "homework_count": len(conversation.homework_entries),
+        "homework_entries": entries(conversation),
     }
 
 
@@ -188,7 +205,9 @@ def _completion_metadata(result: TurnResult) -> dict[str, Any]:
     return metadata
 
 
-def _deduplicated_response(db: Session, conversation: Conversation, event: TurnEvent) -> dict[str, Any]:
+def _deduplicated_response(
+    db: Session, conversation: Conversation, event: TurnEvent
+) -> dict[str, Any]:
     if event.status not in {"success", "safety"} or not event.assistant_message_id:
         raise RuntimeError("该请求已经处理失败，请使用新的请求标识重试。")
     message = db.get(Message, event.assistant_message_id)
@@ -213,6 +232,8 @@ def process_course_turn(
     expected_revision: int | None = None,
     on_reply: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
+    if not is_active_lesson(conversation.lesson_id):
+        raise ValueError("本轮仅开放前两课，历史课程仅支持查看。")
     if conversation.agent_version != AGENT_VERSION:
         raise ValueError("该课程记录由其他实现创建，仅支持查看。")
     if conversation.lesson_version != lesson_version(str(conversation.lesson_id)):
@@ -232,11 +253,19 @@ def process_course_turn(
         raise ValueError("课程记录已更新，请刷新后核对最新内容。")
     if action not in {"chat", *ACTION_LABELS}:
         raise ValueError("未知课程操作。")
-    content = content.strip() or practice_flow.control_labels(state).get(action, ACTION_LABELS.get(action, ""))
+    content = content.strip() or practice_flow.control_labels(state).get(
+        action, ACTION_LABELS.get(action, "")
+    )
     if not content:
         raise ValueError("消息不能为空。")
-    navigation_chat = state.get("navigation_version") == navigation.VERSION and state["stage"] in {"learning_goal", "plan", "summary"}
-    action = TEXT_ACTIONS.get(content, action) if action == "chat" and not navigation_chat else action
+    navigation_chat = state.get("navigation_version") == navigation.VERSION and state["stage"] in {
+        "learning_goal",
+        "plan",
+        "summary",
+    }
+    action = (
+        TEXT_ACTIONS.get(content, action) if action == "chat" and not navigation_chat else action
+    )
 
     request_token = str(uuid.uuid4())
     stale_before = datetime.now(timezone.utc) - timedelta(minutes=2)
@@ -244,7 +273,10 @@ def process_course_turn(
         update(Conversation)
         .where(
             Conversation.id == conversation.id,
-            or_(Conversation.active_request_id.is_(None), Conversation.processing_started_at < stale_before),
+            or_(
+                Conversation.active_request_id.is_(None),
+                Conversation.processing_started_at < stale_before,
+            ),
         )
         .values(active_request_id=request_token, processing_started_at=utcnow())
         .execution_options(synchronize_session=False)
@@ -258,31 +290,65 @@ def process_course_turn(
     started = time.perf_counter()
     try:
         db.refresh(conversation)
-        winner = db.scalar(select(TurnEvent).where(TurnEvent.conversation_id == conversation.id, TurnEvent.idempotency_key == idempotency_key).execution_options(populate_existing=True))
+        winner = db.scalar(
+            select(TurnEvent)
+            .where(
+                TurnEvent.conversation_id == conversation.id,
+                TurnEvent.idempotency_key == idempotency_key,
+            )
+            .execution_options(populate_existing=True)
+        )
         if winner is not None:
             if winner.status != "error":
                 return _deduplicated_response(db, conversation, winner)
             existing = winner
-        if expected_revision is not None and expected_revision != decrypt_json(conversation.agent_state_encrypted).get("revision", 0):
+        if expected_revision is not None and expected_revision != decrypt_json(
+            conversation.agent_state_encrypted
+        ).get("revision", 0):
             raise ValueError("课程记录已更新，请刷新后核对最新内容。")
-        next_sequence = int(
-            db.scalar(select(func.max(Message.sequence)).where(Message.conversation_id == conversation.id)) or 0
-        ) + 1
+        next_sequence = (
+            int(
+                db.scalar(
+                    select(func.max(Message.sequence)).where(
+                        Message.conversation_id == conversation.id
+                    )
+                )
+                or 0
+            )
+            + 1
+        )
         if existing:
             event = existing
             user_message = db.get(Message, event.user_message_id)
             previous_trace = decrypt_json(event.trace_encrypted)
-            if user_message is None or decrypt_text(user_message.content_encrypted) != content or previous_trace.get("request_action", "chat") != action:
+            if (
+                user_message is None
+                or decrypt_text(user_message.content_encrypted) != content
+                or previous_trace.get("request_action", "chat") != action
+            ):
                 raise ValueError("重试必须使用同一轮的原始输入与操作。")
             event.status = "pending"
             event.completed_at = None
             assistant_sequence = next_sequence
         else:
             previous_trace = {"request_action": action, "failed_attempts": []}
-            user_message = Message(conversation_id=conversation.id, sequence=next_sequence, role="learner", content_encrypted=encrypt_text(content))
+            user_message = Message(
+                conversation_id=conversation.id,
+                sequence=next_sequence,
+                role="learner",
+                content_encrypted=encrypt_text(content),
+            )
             db.add(user_message)
             db.flush()
-            event = TurnEvent(conversation_id=conversation.id, user_message_id=user_message.id, idempotency_key=idempotency_key, status="pending", agent_version=AGENT_VERSION, agent_prompt_hash=course_prompt_hash(str(conversation.lesson_id)), trace_encrypted=encrypt_json(previous_trace))
+            event = TurnEvent(
+                conversation_id=conversation.id,
+                user_message_id=user_message.id,
+                idempotency_key=idempotency_key,
+                status="pending",
+                agent_version=AGENT_VERSION,
+                agent_prompt_hash=course_prompt_hash(str(conversation.lesson_id)),
+                trace_encrypted=encrypt_json(previous_trace),
+            )
             db.add(event)
             assistant_sequence = next_sequence + 1
         db.commit()
@@ -297,7 +363,11 @@ def process_course_turn(
         if on_reply is not None:
             runtime.on_reply = on_reply
         history = _model_history(conversation)
-        result = runtime.process(state, history, action=action) if action != "chat" else runtime.process(state, history)
+        result = (
+            runtime.process(state, history, action=action)
+            if action != "chat"
+            else runtime.process(state, history)
+        )
         assistant_message = Message(
             conversation_id=conversation.id,
             sequence=assistant_sequence,
@@ -323,7 +393,14 @@ def process_course_turn(
         values = {"agent_state_encrypted": encrypt_json(result.state)}
         if result.state.get("completed"):
             values.update(status="completed", ended_at=utcnow(), active_course_key=None)
-        saved = db.execute(update(Conversation).where(Conversation.id == conversation.id, Conversation.active_request_id == request_token).values(**values).execution_options(synchronize_session=False)).rowcount
+        saved = db.execute(
+            update(Conversation)
+            .where(
+                Conversation.id == conversation.id, Conversation.active_request_id == request_token
+            )
+            .values(**values)
+            .execution_options(synchronize_session=False)
+        ).rowcount
         if saved != 1:
             raise RuntimeError("本轮处理已过期，请刷新课程后重试。")
         event.assistant_message_id = assistant_message.id
@@ -350,8 +427,13 @@ def process_course_turn(
             persisted = db.get(TurnEvent, event.id)
             if persisted:
                 trace = decrypt_json(persisted.trace_encrypted)
-                trace.setdefault("failed_attempts", []).append({"error_type": type(exc).__name__, "detail": str(exc)[:1000],
-                    "model_calls": getattr(runtime, "model_calls", [])})
+                trace.setdefault("failed_attempts", []).append(
+                    {
+                        "error_type": type(exc).__name__,
+                        "detail": str(exc)[:1000],
+                        "model_calls": getattr(runtime, "model_calls", []),
+                    }
+                )
                 persisted.trace_encrypted = encrypt_json(trace)
                 persisted.status = "error"
                 persisted.error_type = type(exc).__name__
@@ -363,7 +445,9 @@ def process_course_turn(
     finally:
         db.execute(
             update(Conversation)
-            .where(Conversation.id == conversation.id, Conversation.active_request_id == request_token)
+            .where(
+                Conversation.id == conversation.id, Conversation.active_request_id == request_token
+            )
             .values(active_request_id=None, processing_started_at=None)
         )
         db.commit()

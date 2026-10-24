@@ -15,6 +15,7 @@ from cbt_course_llm_freeform.azure_chat_client import AzureChatCompletionsClient
 from cbt_course_llm_freeform.catalog import LESSON_2_VERSION, course_by_id
 from cbt_course_llm_freeform.prompt import prompt_for_lesson
 LESSON_2_SYSTEM_PROMPT = prompt_for_lesson("lesson-2")
+from cbt_course_llm_freeform.tests.shared_turn_fixture import shared_state
 from cbt_course_llm_freeform.runtime import (
     FreeformCourseRuntime,
     course_payload,
@@ -138,7 +139,7 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
         self.assertFalse(completed)
 
     def test_model_completion_marker_cannot_complete_a_course(self):
-        state = new_course_state("lesson-1")
+        state = shared_state()
         fake = FakeAgent("我们继续梳理。")
         result = FreeformCourseRuntime(agent=fake).process(state, [{"role": "learner", "content": "回答"}])
         self.assertEqual(course_payload(result.state)["progress_percent"], 0)
@@ -161,7 +162,7 @@ class FreeformAgentRuntimeTest(unittest.TestCase):
         self.assertTrue(course_by_id("lesson-2")["available"])
         state = new_course_state("lesson-2")
         self.assertEqual(state["lesson_version"], LESSON_2_VERSION)
-        self.assertEqual(course_payload(state)["lesson"]["title"], "看见情境、想法和心情")
+        self.assertEqual(course_payload(state)["lesson"]["title"], "捕捉我的思维")
 
         client = CapturingClient("我们先从最近一周开始。")
         FreeformCourseAgent(
@@ -213,7 +214,7 @@ class FreeformServiceTest(unittest.TestCase):
         self.assertTrue(resumed)
         self.assertEqual(same.id, conversation.id)
         self.assertEqual(conversation.agent_version, AGENT_VERSION)
-        self.assertIn("7.1-feedback-review", conversation.active_course_key)
+        self.assertIn("7.5-two-lesson-backend", conversation.active_course_key)
         self.assertIsNone(conversation.scenario_snapshot_encrypted)
 
         conversation.agent_version = "course-v1"
@@ -320,7 +321,7 @@ class FreeformServiceTest(unittest.TestCase):
         )
         self.assertFalse(resumed)
         self.assertEqual(conversation.lesson_version, LESSON_2_VERSION)
-        self.assertIn("lesson-2:5.1-interaction-memory", conversation.active_course_key)
+        self.assertIn(f"lesson-2:{LESSON_2_VERSION}", conversation.active_course_key)
         messages = self.db.scalars(select(Message).where(Message.conversation_id == conversation.id)).all()
         self.assertEqual(len(messages), 1)
         self.assertIsNone(messages[0].attachment_encrypted)

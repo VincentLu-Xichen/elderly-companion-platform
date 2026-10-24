@@ -16,6 +16,7 @@ from cbt_course_llm_freeform.agent import FreeformCourseAgent
 from cbt_course_llm_freeform.deepseek_chat_client import DeepSeekChatCompletionsClient
 from cbt_course_llm_freeform.preview import PreviewClient
 from cbt_course_llm_freeform.reply_stream import ReplyProjector
+from cbt_course_llm_freeform.tests.shared_turn_fixture import shared_state
 from cbt_course_llm_freeform.runtime import FreeformCourseRuntime, new_course_state
 from cbt_course_llm_freeform.services import create_or_resume_course, process_course_turn
 from cbt_course_llm_freeform.streaming import stream_course_turn
@@ -82,7 +83,7 @@ class ReplyStreamingTests(unittest.TestCase):
     def test_possible_reflection_hides_teaching_draft_streams_actor_only(self):
         client, deltas = StreamClient(), []
         runtime = FreeformCourseRuntime(agent=FreeformCourseAgent(client=client), on_reply=deltas.append)
-        result = runtime.process(new_course_state("lesson-1", reflection_policy="per_turn"), [{"id": "u1", "role": "learner", "content": "5"}])
+        result = runtime.process(shared_state(reflection_policy="per_turn"), [{"id": "u1", "role": "learner", "content": "5"}])
         self.assertTrue(result.trace["reflection_created"])
         self.assertEqual(client.stream_calls, 1)
         self.assertEqual([item["phase"] for item in runtime.model_calls if item.get("transport") == "stream"], ["guidance_actor"])
@@ -157,6 +158,11 @@ class CourseStreamPersistenceTests(unittest.TestCase):
             db.add(Consent(participant_id=participant.id, version=settings.consent_version))
             db.commit()
             conversation, _ = create_or_resume_course(db, participant_id=participant.id, lesson_id="lesson-1")
+            from webapp.security import encrypt_json
+            state = shared_state(reflection_policy="none")
+            state["conversation_id"] = conversation.id
+            conversation.agent_state_encrypted = encrypt_json(state)
+            db.commit()
             self.participant_id, self.conversation_id = participant.id, conversation.id
             self.before = decrypt_json(conversation.agent_state_encrypted)
 

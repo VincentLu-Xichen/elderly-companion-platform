@@ -49,5 +49,10 @@ function env() {
   b.resolveRequest({reply:'继续',course:b.course});await pending;
   assert.equal(b.input.value,'原消息');
   assert.equal(b.requests[0].content,'');
+  const c=env();
+  c.course.lesson2={actions:[{action:'continue_lesson2',label:'继续雨天情境'}]};
+  pending=c.submit('continue_lesson2');
+  assert.equal(c.bubbles[0].bubble.textContent,'继续雨天情境');
+  c.resolveRequest({reply:'进入雨天',course:c.course});await pending;
   console.log('Draft lifecycle passed: immediate clear, retry snapshot/key, newer draft, control draft.');
 })().catch(error=>{console.error(error);process.exitCode=1});

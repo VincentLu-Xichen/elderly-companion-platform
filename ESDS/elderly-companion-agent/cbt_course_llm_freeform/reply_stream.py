@@ -1,4 +1,5 @@
 """Project only the top-level reply string from incomplete JSON, never metadata."""
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,7 @@ def _string_prefix(raw, start):
             if len(decoded) == 1 and 0xD800 <= ord(decoded) <= 0xDBFF:
                 if end + 6 > len(raw):
                     break
-                decoded = json.loads('"' + raw[index:end + 6] + '"')
+                decoded = json.loads('"' + raw[index : end + 6] + '"')
                 end += 6
             if any(0xD800 <= ord(item) <= 0xDFFF for item in decoded):
                 raise ValueError("Invalid Unicode in streamed reply")
@@ -78,5 +79,5 @@ class ReplyProjector:
         prefix = reply_prefix(self.raw)[:1200]
         if not prefix.startswith(self.emitted):
             raise RuntimeError("Streamed reply changed unexpectedly.")
-        addition, self.emitted = prefix[len(self.emitted):], prefix
+        addition, self.emitted = prefix[len(self.emitted) :], prefix
         return addition
