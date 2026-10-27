@@ -1,0 +1,6 @@
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/blueprint.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/catalog.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/dialogue.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/lesson_1.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/tests/test_deferred_rating_scale.py
+ESDS/elderly-companion-agent/specs/034-deferred-rating-scale

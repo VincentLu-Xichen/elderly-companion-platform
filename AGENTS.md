@@ -1,5 +1,20 @@
 # 项目协作与恢复入口
 
+**最新034（2026-10-27）**：第一课7.9.3、第二课6.2；用户授权返回后评分暂留/量尺修订。320项离线通过；新合成网页7文字轮/8真实请求/60,256 tokens，本次返回未追分、课内0—10与上周1—10区分正确，主动0分保存且另一项暂留；修正review评分后的旧暂留清除。R-010仍Validating；多意图/分块后置，原服务/真实库/.env不动，未提交。详见[034报告](ESDS/elderly-companion-agent/specs/034-deferred-rating-scale/report.md)；以下为历史时点。
+
+**最新033（2026-10-27）**：用户授权统一主Prompt交流优先级修订与真实网页验证；第一课7.9.2、第二课6.2。316项离线检查与原失败JSON回放通过；独立合成网页9文字轮/9请求/67,246 tokens，本次无程序错误，原句澄清不写记录、邀请保持待答、拒绝和主动恢复通过；返回后追问暂留评分与量尺口误仍保留，R-010继续Validating。新guard仅离线覆盖；多意图/分块后置，未动原服务/真实库/.env、未提交。详见[033报告](ESDS/elderly-companion-agent/specs/033-conversation-priority/report.md)。下方“最新”为历史时点。
+
+**最新031（2026-10-26）**：用户授权并纠正为最早六项交流要求，已落地第一课7.9-dialogue-ownership：结构化待办、模型组织正常语言、有来源的交流／邀请／恢复、非作答不耗次，贯通原学习请求、导航和判题。第二课6.2、provider／参数、前端、.env及真实库不改。306项离线检查（新增29项）、60份freeform源码语法与原4份JSON回放通过；新增真实请求0，不代表新Prompt真实效果／网页通过，R-010仍Validating。原评分暂留范围差异等已知问题保留，B／C／D后置，未重启或提交。具体板块、调用变化、证据和Git指导见[031报告](ESDS/elderly-companion-agent/specs/031-lesson1-dialogue-ownership/report.md)。下方其他“最新／当前”为历史时点。
+
+**最新030**：2026-10-24 030暂停判断切片：用户授权分清先听我说、暂不评分与暂停整课，总真实请求≤12、不提交。已完成学习请求/风格Reflexion解耦及动作范围修复，当前第一课7.8.5、第二课6.2；模型参数不变，模块.env权威且未改。实际12请求/70,207 tokens/24.159秒整轮等待（金额与首字等待未知）；7.8.3前三轮真实成功，7.8.3/7.8.4停课均失败，原始与各候选保留。预算耗尽后7.8.5程序修复通过277项离线检查和同真实JSON四轮回放，最终版0新增真实请求；不能称完整真实多轮或网站通过。R-010仍Validating，B/C/D后置，无提交/重启/真实库改动。 [报告](ESDS/elderly-companion-agent/specs/030-scoped-learning-requests/report.md)。
+
+
+2026-10-24最新029：第一课7.7-responsive-teaching主Prompt修订后262项离线检查通过；用户随后确认新旧对照≤12请求，实际5次/29,304 tokens/10.224秒。7.7 D01首轮正式成功、不追分且保留原案例；第二轮及D02变体被not_feedback＋pause动作契约拒绝，课程共1成功4失败，完整多轮未取得。0API回放复现，余量7次关闭；未在测试中继续改Prompt或自动提交/重启。模型参数/控制器/Schema/辅助、第二课6.2不变，7.7仍为Validating候选，基座尚未调好；后续架构试验继续后置。[真实结果](ESDS/elderly-companion-agent/specs/029-responsive-single-prompt/live-report.md)，实际脏源码/原始JSON/失败保留。下文7.5和待预算为此前时点。
+
+2026-10-24最新A1-D01：用户确认新增新旧对照≤12请求后，实际2次/11,258 tokens/3.776秒，两版首轮都返回JSON但重复behavior被程序拒绝。按卡停止、第2/3轮未跑，0API原JSON回放复现，预算关闭不重分配余量，未改Agent或提交。[场景结果](ESDS/elderly-companion-agent/specs/028-a1-prompt-style/distress-report.md)保留全部失败；用户此前感到候选更礼貌的评价单列保留，候选归档、运行仍7.5/6.2。下文待确认/0新增是此前时点。
+
+2026-10-24最新实验：[028](ESDS/elderly-companion-agent/specs/028-a1-prompt-style/report.md)按授权完成三场景前后对照，9/12请求、45,247 tokens；未见足够语气收益，R03评分采用/R05暂留问题两版均存在，候选撤回，运行实现恢复7.5/6.2，260项离线检查通过。先前按用户要求将A1前版本9469acb推送harrison；028实验后记录未自动提交。原始四run与源码zip在本机忽略目录另备份，不追加剩余预算，不将本轮解释为所有Prompt方法无效或质量已验收。
+
 本文件管理整个工作区的产品协作方式。进入具体模块前，还须完整阅读其 `AGENTS.md`；`ESDS/elderly-companion-agent/AGENTS.md` 中的安全、数据、版本、SDD 和验证约束继续适用。
 
 ## 每次会话先恢复

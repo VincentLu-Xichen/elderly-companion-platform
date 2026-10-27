@@ -1,5 +1,7 @@
 # 前两课：教学、结构化记录与Reflexion
 
+**最新031（2026-10-26）**：用户授权并纠正为最早六项交流要求，已落地第一课7.9-dialogue-ownership：结构化待办、模型组织正常语言、有来源的交流／邀请／恢复、非作答不耗次，贯通原学习请求、导航和判题。第二课6.2、provider／参数、前端、.env及真实库不改。306项离线检查（新增29项）、60份freeform源码语法与原4份JSON回放通过；新增真实请求0，不代表新Prompt真实效果／网页通过，R-010仍Validating。原评分暂留范围差异等已知问题保留，B／C／D后置，未重启或提交。具体板块、调用变化、证据和Git指导见[031报告](../specs/031-lesson1-dialogue-ownership/report.md)。下方其他“最新／当前”为历史时点。
+
 最新024：第二课升为6.2-contrast-reply，contrast普通回答先保留模型承接，再接原有下一问；校验、阶段、Prompt均不变。253项离线回归及有限原例/变体检查完成，用户体验待验收。详见[024对照与代码讲解](../specs/024-lesson2-contrast-reply/report.md)；下方6.1为022时点。
 
 当前只运行第1、2课。后六课内容、skill_flow/skill_content、对应动作和字段已按用户授权删除；旧资料及加密历史记录保留。范围见[021报告](../specs/021-two-lesson-backend/report.md)；最新职责拆分及阅读指南见[022报告](../specs/022-backend-readability/report.md)，第一课7.5、第二课6.1，Prompt契约保持不变。

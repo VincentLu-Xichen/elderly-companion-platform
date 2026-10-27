@@ -1,0 +1,220 @@
+{
+  "experiment": "20261024-A1-distress-pair-7f19c2",
+  "suite_version": "cbt12-a1-distress/1",
+  "baseline_commit": "9469acb90ca4e33f8f8189dcb7e3a961a8c9e59a",
+  "authorization": "User confirmed new paired observation, total at most 12; not reused from previous budget",
+  "budget_limit": 12,
+  "per_arm_limit": 6,
+  "maximum_inputs_per_arm": 3,
+  "attempted_calls": 2,
+  "unspent_calls": 10,
+  "automatic_retries": 0,
+  "provider_failures": 0,
+  "provider_json_schema_valid": 2,
+  "runtime_successful_turns": 0,
+  "runtime_failed_turns": 2,
+  "completed_trajectory": false,
+  "stop_reason": "Both arms failed on first turn with duplicate_evidence_field; stop per card, no retries or invented continuations",
+  "tokens": {
+    "prompt_tokens": 10849,
+    "completion_tokens": 409,
+    "total_tokens": 11258
+  },
+  "turn_wait_ms": 3776,
+  "first_token_wait_ms": null,
+  "verified_cost": null,
+  "arms": {
+    "before": {
+      "run_id": "20261024-112634-A1-D01-before-t1-da06ee",
+      "calls": 1,
+      "tokens": {
+        "prompt_tokens": 5365,
+        "completion_tokens": 216,
+        "total_tokens": 5581
+      },
+      "turn_wait_ms": 1913,
+      "raw_model_json": {
+        "reply": "听得出这场考试到现在还压得您很难受，今天也不想见人。我们先不急着往前翻，只把已经说过的放在一起看：题没做出来、想法是“只有我不会”、心情担心、考完一直翻答案。右侧学习记录里相信程度和情绪强度还空着，您可以对照已说的内容看看是否准确，也可以留着不填。",
+        "observations": [
+          {
+            "field": "emotion",
+            "value": "一想到昨天那场考试就很难受",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "behavior",
+            "value": "回宿舍哭了很久",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "thought",
+            "value": "觉得自己特别没用",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "behavior",
+            "value": "今天也不想见人",
+            "source_message_id": "A1-D01-user-1"
+          }
+        ],
+        "advance": false,
+        "assessment": {
+          "signals": []
+        },
+        "practice_origin": "current_case",
+        "next_practice_field": "thought_belief"
+      },
+      "final_reply": null,
+      "runtime_error": "同一字段不能在一轮中提交多个不同摘录。",
+      "state_unchanged": true,
+      "program_invariants": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    },
+    "after": {
+      "run_id": "20261024-112648-A1-D01-after-t1-cbc54a",
+      "calls": 1,
+      "tokens": {
+        "prompt_tokens": 5484,
+        "completion_tokens": 193,
+        "total_tokens": 5677
+      },
+      "turn_wait_ms": 1863,
+      "raw_model_json": {
+        "reply": "听您说回宿舍哭了很久、今天也不想见人，这种难受很实在。刚才记录里，您对“别人肯定都会，只有我不会”这条想法，当时有多相信？0分是不相信，10分是非常相信；想不起来或暂时不评也可以。",
+        "observations": [
+          {
+            "field": "emotion",
+            "value": "一想到昨天那场考试就很难受",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "behavior",
+            "value": "回宿舍哭了很久",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "thought",
+            "value": "觉得自己特别没用",
+            "source_message_id": "A1-D01-user-1"
+          },
+          {
+            "field": "behavior",
+            "value": "今天也不想见人",
+            "source_message_id": "A1-D01-user-1"
+          }
+        ],
+        "advance": false,
+        "practice_origin": "current_case",
+        "next_practice_field": "thought_belief",
+        "assessment": {
+          "signals": []
+        }
+      },
+      "final_reply": null,
+      "runtime_error": "同一字段不能在一轮中提交多个不同摘录。",
+      "state_unchanged": true,
+      "program_invariants": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    }
+  },
+  "verification": {
+    "initial_history_equal": true,
+    "initial_state_differences": [
+      ".lesson_version"
+    ],
+    "first_input_equal": true,
+    "public_parameters_equal": true,
+    "archived_prompts_match": true,
+    "production_files_compared_to_028_reference": 83,
+    "production_files_changed": {
+      "before": [],
+      "after": []
+    },
+    "explicit_env_source_and_unchanged": true,
+    "future_inputs_and_review_metadata_absent_from_requests": true,
+    "source_archives_intact": true
+  },
+  "offline_diagnosis": {
+    "before": {
+      "model_json_schema_valid": true,
+      "exact_replay": {
+        "error_type": "RuntimeError",
+        "error_message": "同一字段不能在一轮中提交多个不同摘录。",
+        "matches_live_error": true,
+        "input_state_unchanged": true,
+        "replayed_calls": 1,
+        "api_calls": 0
+      },
+      "diagnostic_counterfactual": {
+        "observation_validation": "accepted",
+        "accepted_fields": [
+          "emotion",
+          "behavior",
+          "thought"
+        ],
+        "changed_fields": [
+          "emotion",
+          "behavior",
+          "thought"
+        ],
+        "api_calls": 0,
+        "removed_observation": {
+          "field": "behavior",
+          "value": "今天也不想见人",
+          "source_message_id": "A1-D01-user-1"
+        },
+        "scope": "Artificial validation-only removal; no generated reply, no product modification, not a tested repair"
+      }
+    },
+    "after": {
+      "model_json_schema_valid": true,
+      "exact_replay": {
+        "error_type": "RuntimeError",
+        "error_message": "同一字段不能在一轮中提交多个不同摘录。",
+        "matches_live_error": true,
+        "input_state_unchanged": true,
+        "replayed_calls": 1,
+        "api_calls": 0
+      },
+      "diagnostic_counterfactual": {
+        "observation_validation": "accepted",
+        "accepted_fields": [
+          "emotion",
+          "behavior",
+          "thought"
+        ],
+        "changed_fields": [
+          "emotion",
+          "behavior",
+          "thought"
+        ],
+        "api_calls": 0,
+        "removed_observation": {
+          "field": "behavior",
+          "value": "今天也不想见人",
+          "source_message_id": "A1-D01-user-1"
+        },
+        "scope": "Artificial validation-only removal; no generated reply, no product modification, not a tested repair"
+      }
+    }
+  },
+  "coding_agent_review": {
+    "final_experience": "无法比较成功对话：两版均在首轮失败，未形成最终回复",
+    "raw_wording_only": "A1开头回应哭泣，随后直接追问评分；参考回复表示不急着推进但仍长篇复述。此例候选对当前痛苦的承接比参考更急，单次不外推所有场景",
+    "classification": "Model emits duplicate behavior observations + runtime rejects that output shape; not an API failure or a final-reply override",
+    "decision": "Keep user-perceived politeness benefit from earlier cases separately; this distress case exposes a blocker. Do not edit product or rerun in this observation budget"
+  },
+  "limits": [
+    "First-turn-only bounded failure capture, not a complete multi-turn or full-course test",
+    "No web, database persistence, cross-course memory or clinical outcome validation",
+    "Counterfactual excerpt removal is diagnosis only"
+  ]
+}

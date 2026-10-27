@@ -162,6 +162,7 @@ class FreeformCourseRuntime:
 
     def _context(self, state: dict) -> dict:
         lesson_id, stage = state["lesson_id"], state["stage"]
+        natural_teaching_context = dialogue.enabled(state) and stage in {"learn", "practice", "review"}
         labels = {**STAGE_LABELS, **learning_check.LABELS}
         if blueprint.enabled(state):
             labels.update(
@@ -171,7 +172,7 @@ class FreeformCourseRuntime:
                 assessment="四要素辨认练习",
                 learning_goal="整套课程目标",
             )
-        return {
+        context = {
             "dialogue_policy": state.get("dialogue_policy"),
             "lesson2": lesson2_flow.enabled(state),
             "lesson2_step": state.get("lesson2_flow", {}).get("step"),
@@ -222,7 +223,7 @@ class FreeformCourseRuntime:
                 else []
             ),
             "active_guidance": active_guidance(state),
-            "next_question": next_question(state),
+            "next_question": None if natural_teaching_context else next_question(state),
             "example": (
                 blueprint.CONCEPTS["situation"]
                 if blueprint.enabled(state)
@@ -238,6 +239,13 @@ class FreeformCourseRuntime:
                 learning_check.payload(state) if learning_check.enabled(state) else None
             ),
         }
+        if dialogue.enabled(state):
+            context["classroom_dialogue"] = dialogue.context(state)
+            context["current_teaching_turn"] = copy.deepcopy(state.get("latest_teaching_turn"))
+            if natural_teaching_context:
+                context.pop("next_question", None)
+                context["pending_task"] = blueprint.pending_task(state)
+        return context
 
     def process(
         self, state: dict[str, Any], history: list[dict[str, str]], *, action: str = "chat"
@@ -245,6 +253,7 @@ class FreeformCourseRuntime:
         updated = copy.deepcopy(state)
         updated.pop("latest_interaction_event", None)
         updated.pop("boundary_event", None)
+        updated.pop("latest_teaching_turn", None)
         lesson_id = str(updated.get("lesson_id", ""))
         require_available_course(lesson_id)
         self.model_calls = []
@@ -305,6 +314,7 @@ class FreeformCourseRuntime:
                 return self._result(updated, response, stage_before, action=action)
         if action != "chat":
             reply = self._control(updated, latest, action)
+            dialogue.reset_after_control(updated, action)
             updated["workflow"]["last_trigger"] = {
                 "policy": updated["workflow"]["policy"],
                 "triggered": False,
@@ -369,7 +379,7 @@ class FreeformCourseRuntime:
                     on_reply=self.on_reply,
                 )
                 self.agent.call_log = self.model_calls
-            reply, completion = learning_check.answer(updated, latest, self.agent)
+            reply, completion = learning_check.answer(updated, latest, self.agent, history=history)
             if not isinstance(reply, str):
                 note = interaction.validate(reply, latest)
                 event_result = self._accept_interaction(
@@ -439,6 +449,17 @@ class FreeformCourseRuntime:
                 }
             )
         decision = result.decision
+        if decision.learning_request is not None:
+            from cbt_course_llm_freeform import learning_request
+
+            if (decision.observations or decision.advance or decision.case_options
+                or decision.next_practice_field is not None or decision.interaction is not None
+                or decision.turn_intent is not None):
+                raise ValueError("A local learning request cannot also update practice answers or boundaries")
+            request = decision.learning_request.model_dump()
+            request_reply = learning_request.apply(updated, request, latest, decision.reply)
+            return self._result(updated, self._safe_reply(request_reply, updated), stage_before,
+                                completion=result.completion, action=request["mode"])
         if not blueprint.enabled(updated) and (
             len(decision.observations) > 4
             or decision.next_practice_field is not None
@@ -454,6 +475,26 @@ class FreeformCourseRuntime:
             )
             if event_result is not None:
                 return event_result
+        natural_teaching = dialogue.enabled(updated) and stage in {"learn", "practice", "review"}
+        teaching_turn = None
+        conversation_record_guard = None
+        answer_attempt = True
+        progress_allowed = True
+        if natural_teaching:
+            decision, conversation_record_guard = dialogue.guard_conversation_records(
+                updated, decision, latest, faithful_excerpt
+            )
+            teaching_turn = dialogue.resolve_turn(decision, latest, faithful_excerpt)
+            if (stage == "practice" and not boundaries.fictional(updated)
+                and decision.practice_origin != "current_case" and decision.observations):
+                raise ValueError("Another event cannot be written into the current learning case")
+            dialogue.apply_turn(updated, teaching_turn, latest, answer_evidence=bool(decision.observations))
+            progress_allowed = teaching_turn["kind"] in {"answer", "resume_course"}
+            answer_attempt = teaching_turn["kind"] in {"answer", "resume_course"} and (
+                teaching_turn["origin"] == "legacy_answer"
+                or teaching_turn.get("attempted_field") == (focus_before_learn or focus_before)
+                and teaching_turn.get("attempted_field") is not None
+            )
         if decision.case_options:
             if (
                 not blueprint.enabled(updated)
@@ -469,7 +510,7 @@ class FreeformCourseRuntime:
             ]
             return self._result(
                 updated,
-                "您提到了几件事，我们先选一件：\n"
+                decision.reply if natural_teaching else "您提到了几件事，我们先选一件：\n"
                 + "\n".join(f"{i+1}. {item}" for i, item in enumerate(decision.case_options))
                 + "\n您想先看哪一件？也可以先不谈。",
                 stage_before,
@@ -480,6 +521,7 @@ class FreeformCourseRuntime:
             stage == "practice"
             and boundaries.fictional(updated)
             and decision.practice_origin != "current_case"
+            and (not natural_teaching or answer_attempt)
         ):
             return self._result(
                 updated,
@@ -491,112 +533,139 @@ class FreeformCourseRuntime:
             )
         accepted, changed = self._apply_observations(updated, decision, latest, stage)
         signals = self._validated_signals(decision, latest, before_fields, changed)
-        if blueprint.enabled(updated) and stage in {"learn", "practice"}:
-            teacher_flow.after_lesson1(
-                updated, focus_before_learn or focus_before, accepted, latest
-            )
-        reply = decision.reply
-        uncertain = answer_needs_help(text)
-        if blueprint.enabled(updated) and stage == "learn":
-            if "situation" in accepted:
-                updated["stage"] = "practice"
-                blueprint.after_turn(updated, None, accepted, latest)
-                reply = (
-                    "谢谢您分享这件事。"
-                    + teacher_flow.CARDS["situation"]["definition"]
-                    + "已说出的内容会一起整理，不再重复问。"
-                    + next_question(updated)
+        if natural_teaching:
+            # Teaching dialogue and answer collection have different clocks.
+            # A concept question or side conversation keeps the task pending.
+            if (answer_attempt or accepted) and stage in {"learn", "practice"}:
+                teacher_flow.after_lesson1(
+                    updated, (focus_before_learn or focus_before) if answer_attempt else None, accepted, latest
                 )
-            else:
-                blueprint.after_turn(updated, focus_before_learn, accepted, latest)
-                if "situation" in updated["practice_flow"]["deferred"]:
+            if stage == "learn":
+                if "situation" in accepted:
                     updated["stage"] = "practice"
-                    reply = "这一项先留空。" + next_question(updated)
-                elif uncertain and not interaction.guidance(updated):
-                    reply = next_question(updated)
-        elif blueprint.enabled(updated) and stage in {"practice", "review"}:
-            if stage == "practice":
-                blueprint.after_turn(updated, focus_before, accepted, latest)
-            elif blueprint.missing(updated):
+                    blueprint.after_turn(updated, None, accepted, latest)
+                else:
+                    blueprint.after_turn(updated, focus_before_learn, accepted, latest,
+                                         answer_attempt=answer_attempt, progress_allowed=progress_allowed)
+                    if answer_attempt and "situation" in updated["practice_flow"]["deferred"]:
+                        updated["stage"] = "practice"
+            elif stage == "practice":
+                blueprint.after_turn(updated, focus_before, accepted, latest,
+                                     answer_attempt=answer_attempt, progress_allowed=progress_allowed)
+            elif progress_allowed and blueprint.missing(updated):
                 updated["stage"] = "practice"
-            if updated["stage"] == "review":
-                if "relationship_note" in accepted and not changed:
-                    reply = "谢谢您分享回看后的想法，这段补充也会保留。请核对右侧记录，准确的话可以确认；想修改也可以直接说。"
-                elif stage == "review" and not changed:
+            reply = decision.reply
+            if updated["blueprint"].get("rating_rejection", {}).get("source_message_id") == latest["id"]:
+                # An invalid score is an actual failure receipt, not a normal
+                # next-question template. Do not append another scoring prompt.
+                reply = "这次评分还没能准确对应到当前想法或情绪，我先不填入，也不会改成其他分数。"
+        else:
+            if blueprint.enabled(updated) and stage in {"learn", "practice"}:
+                teacher_flow.after_lesson1(
+                    updated, focus_before_learn or focus_before, accepted, latest
+                )
+            reply = decision.reply
+            uncertain = answer_needs_help(text)
+            if blueprint.enabled(updated) and stage == "learn":
+                if "situation" in accepted:
+                    updated["stage"] = "practice"
+                    blueprint.after_turn(updated, None, accepted, latest)
                     reply = (
-                        blueprint.review_text(updated, invite=False)
-                        if updated["practice_flow"].get("stop_probing")
-                        else "请核对现有记录是否准确；可以指出需要修改的地方，准确后再确认。"
+                        "谢谢您分享这件事。"
+                        + teacher_flow.CARDS["situation"]["definition"]
+                        + "已说出的内容会一起整理，不再重复问。"
+                        + next_question(updated)
                     )
                 else:
-                    reply = blueprint.review_text(updated)
-            # Keep the model's natural acknowledgement; show a short, accurate
-            # next-task anchor if its projected question is no longer current.
-            elif accepted or focus_before != practice_flow.current_field(updated):
-                if decision.next_practice_field != practice_flow.current_field(updated):
-                    acknowledgement = "".join(
-                        part + "。"
-                        for part in reply.split("。")[:-1]
-                        if "？" not in part and "?" not in part
-                    )[:180]
-                    reply = acknowledgement + next_question(updated)
-            if (
-                updated["blueprint"].get("rating_rejection", {}).get("source_message_id")
-                == latest["id"]
-            ):
-                reply = (
-                    "这次评分还没能准确对应到当前想法或情绪，我先不填入，也不会改成其他分数。"
-                    + next_question(updated)
+                    blueprint.after_turn(updated, focus_before_learn, accepted, latest)
+                    if "situation" in updated["practice_flow"]["deferred"]:
+                        updated["stage"] = "practice"
+                        reply = "这一项先留空。" + next_question(updated)
+                    elif uncertain and not interaction.guidance(updated):
+                        reply = next_question(updated)
+            elif blueprint.enabled(updated) and stage in {"practice", "review"}:
+                if stage == "practice":
+                    blueprint.after_turn(updated, focus_before, accepted, latest)
+                elif blueprint.missing(updated):
+                    updated["stage"] = "practice"
+                if updated["stage"] == "review":
+                    if "relationship_note" in accepted and not changed:
+                        reply = "谢谢您分享回看后的想法，这段补充也会保留。请核对右侧记录，准确的话可以确认；想修改也可以直接说。"
+                    elif stage == "review" and not changed:
+                        reply = (
+                            blueprint.review_text(updated, invite=False)
+                            if updated["practice_flow"].get("stop_probing")
+                            else "请核对现有记录是否准确；可以指出需要修改的地方，准确后再确认。"
+                        )
+                    else:
+                        reply = blueprint.review_text(updated)
+                # Keep the model's natural acknowledgement; show a short, accurate
+                # next-task anchor if its projected question is no longer current.
+                elif accepted or focus_before != practice_flow.current_field(updated):
+                    if decision.next_practice_field != practice_flow.current_field(updated):
+                        acknowledgement = "".join(
+                            part + "。"
+                            for part in reply.split("。")[:-1]
+                            if "？" not in part and "?" not in part
+                        )[:180]
+                        reply = acknowledgement + next_question(updated)
+                if (
+                    updated["blueprint"].get("rating_rejection", {}).get("source_message_id")
+                    == latest["id"]
+                ):
+                    reply = (
+                        "这次评分还没能准确对应到当前想法或情绪，我先不填入，也不会改成其他分数。"
+                        + next_question(updated)
+                    )
+                elif (
+                    uncertain
+                    and not interaction.guidance(updated)
+                    and stage == "practice"
+                    and focus_before in teacher_flow.CARDS
+                    and focus_before not in accepted
+                    and updated["stage"] == "practice"
+                ):
+                    reply = next_question(updated)
+            elif stage in {"check_in", "learn"} and decision.advance and accepted and not uncertain:
+                updated["stage"] = "learn" if stage == "check_in" else "practice"
+                if stage == "check_in" and updated["carryover"].get("status") == "offered":
+                    updated["carryover"] = {"status": "declined"}
+                feedback = (
+                    decision.reply.strip()
+                    if len(decision.reply) <= 140
+                    and not any(word in decision.reply for word in ("？", "?", "完成", "确认", "[["))
+                    else ""
                 )
-            elif (
-                uncertain
-                and not interaction.guidance(updated)
-                and stage == "practice"
-                and focus_before in teacher_flow.CARDS
-                and focus_before not in accepted
-                and updated["stage"] == "practice"
+                boundaries.ensure(updated)
+                reply = feedback + (
+                    next_question(updated)
+                    if blueprint.enabled(updated)
+                    or boundaries.fictional(updated)
+                    and updated["stage"] == "practice"
+                    else stage_intro(lesson_id, updated["stage"], path=updated.get("path"))
+                )
+            elif bounded_practice:
+                if boundaries.enabled(updated):
+                    for field in accepted:
+                        updated["practice_flow"]["deferred"].pop(field, None)
+                        updated["practice_flow"]["unanswered"].pop(field, None)
+                    if practice_flow.ready(updated):
+                        updated["stage"] = "review"
+                else:
+                    reply = practice_flow.update(updated, focus_before, accepted, latest)
+            elif stage == "practice" and all(
+                key in updated["draft_record"] for key in required_fields(updated)
             ):
-                reply = next_question(updated)
-        elif stage in {"check_in", "learn"} and decision.advance and accepted and not uncertain:
-            updated["stage"] = "learn" if stage == "check_in" else "practice"
-            if stage == "check_in" and updated["carryover"].get("status") == "offered":
-                updated["carryover"] = {"status": "declined"}
-            feedback = (
-                decision.reply.strip()
-                if len(decision.reply) <= 140
-                and not any(word in decision.reply for word in ("？", "?", "完成", "确认", "[["))
-                else ""
-            )
-            boundaries.ensure(updated)
-            reply = feedback + (
-                next_question(updated)
-                if blueprint.enabled(updated)
-                or boundaries.fictional(updated)
-                and updated["stage"] == "practice"
-                else stage_intro(lesson_id, updated["stage"], path=updated.get("path"))
-            )
-        elif bounded_practice:
-            if boundaries.enabled(updated):
-                for field in accepted:
-                    updated["practice_flow"]["deferred"].pop(field, None)
-                    updated["practice_flow"]["unanswered"].pop(field, None)
-                if practice_flow.ready(updated):
-                    updated["stage"] = "review"
-            else:
-                reply = practice_flow.update(updated, focus_before, accepted, latest)
-        elif stage == "practice" and all(
-            key in updated["draft_record"] for key in required_fields(updated)
-        ):
-            updated["stage"] = "review"
-            reply = stage_intro(lesson_id, "review")
-        if dialogue.enabled(updated) and stage in {"learn", "practice", "review"}:
-            # Keep the state/teaching-card updates above, but do not replace the
-            # model's acknowledgement, explanation or question with a template.
-            if (
-                updated["blueprint"].get("rating_rejection", {}).get("source_message_id")
-                != latest["id"]
-            ):
-                reply = decision.reply
+                updated["stage"] = "review"
+                reply = stage_intro(lesson_id, "review")
+            if dialogue.enabled(updated) and stage in {"learn", "practice", "review"}:
+                # Keep the state/teaching-card updates above, but do not replace the
+                # model's acknowledgement, explanation or question with a template.
+                if (
+                    updated["blueprint"].get("rating_rejection", {}).get("source_message_id")
+                    != latest["id"]
+                ):
+                    reply = decision.reply
         trigger = decide_trigger(
             updated["workflow"],
             task_before=task_before,
@@ -604,6 +673,7 @@ class FreeformCourseRuntime:
             signals=signals,
             changed_fields=changed,
             stage_before=stage_before,
+            answer_attempt=answer_attempt,
         )
         trigger["evidence_message_ids"] = list(
             dict.fromkeys(signal["source_message_id"] for signal in signals)
@@ -636,9 +706,26 @@ class FreeformCourseRuntime:
             reflection_created=reflection_created,
             reflection_response_applied=reflection_created
             and (not bounded_practice or boundaries.enabled(updated)),
+            conversation_record_guard=conversation_record_guard,
         )
 
     def _accept_interaction(self, state, note, latest, stage_before, completion=None):
+        from cbt_course_llm_freeform import learning_request
+
+        if note.get("learning_request") is not None:
+            request = note["learning_request"]
+            aligned_pause = (
+                request["mode"] == "pause_lesson"
+                and note.get("personal_intent", "none") in {"none", "pause"}
+                and note.get("task_action", "continue") in {"continue", "pause"}
+            )
+            if not aligned_pause and (note.get("personal_intent", "none") != "none" or note.get("task_action", "continue") != "continue"):
+                raise ValueError("Learning request conflicts with another proposed action")
+            request_reply = learning_request.apply(state, request, latest, note["reply"])
+            return self._result(
+                state, self._safe_reply(request_reply, state), stage_before,
+                completion=completion, action=request["mode"],
+            )
         task_action = note.get("task_action", "continue")
         second = lesson2_flow.enabled(state)
         if (
@@ -1228,6 +1315,8 @@ class FreeformCourseRuntime:
                 context={
                     "stage": state["stage"],
                     "dialogue_policy": state.get("dialogue_policy"),
+                    "classroom_dialogue": dialogue.context(state),
+                    "recorded_fields": copy.deepcopy(state["draft_record"]),
                     "learning_goal_draft": state.get("learning_goal_draft")
                     or state.get("learning_goal")
                     or {"items": state.get("blueprint", {}).get("goal_edit_base", [])},
@@ -1247,6 +1336,15 @@ class FreeformCourseRuntime:
             decision = result.decision
             navigation.validate(decision, state, latest)
             proposed = copy.deepcopy(state)
+            if decision.turn_intent is not None:
+                teaching_turn = dialogue.resolve_turn(decision, latest, faithful_excerpt)
+                if teaching_turn["kind"] != "resume_course" and (
+                    decision.intent != "clarify" or decision.actions or decision.goal_items or decision.goal_updates
+                ):
+                    raise ValueError("Conversation cannot execute course navigation actions")
+                if teaching_turn["kind"] == "answer":
+                    raise ValueError("Navigation answers use the validated goal or action contract")
+                dialogue.apply_turn(proposed, teaching_turn, latest)
             if decision.intent == "goal":
                 if proposed["stage"] == "check_feedback":
                     self._control(proposed, latest, "continue_after_check")
@@ -1293,6 +1391,7 @@ class FreeformCourseRuntime:
                     reply = goal_note + plan_note + reply
             if dialogue.enabled(proposed) and decision.intent != "clarify":
                 reply = dialogue.navigation_reply(decision.reply, reply)
+                dialogue.reset_after_control(proposed, "course_navigation")
             proposed["workflow"]["last_trigger"] = {
                 "triggered": False,
                 "reason_codes": ["natural_language_navigation"],
@@ -1378,6 +1477,8 @@ class FreeformCourseRuntime:
                 "case_id": state.get("case_id"),
                 "task_step_id": task_step_id(state),
                 "completed": state["completed"],
+                "teaching_turn": copy.deepcopy(state.get("latest_teaching_turn")),
+                "classroom_dialogue": dialogue.context(state) if dialogue.enabled(state) else None,
                 "model_called": bool(self.model_calls),
                 "personal_practice": practice_flow.payload(state),
                 "interaction_feedback": copy.deepcopy(

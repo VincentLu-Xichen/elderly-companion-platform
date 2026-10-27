@@ -7,7 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cbt_course_llm_freeform.azure_chat_client import ChatCompletionResult
 from cbt_course_llm_freeform.interaction import InteractionReflection
+from cbt_course_llm_freeform.learning_request import TeachingRequest
 from cbt_course_llm_freeform.navigation import NavigationDecision
+from cbt_course_llm_freeform.dialogue import TeachingTurn
 
 
 class CourseMessageCreate(BaseModel):
@@ -91,6 +93,8 @@ class TeachingDecision(BaseModel):
     # Accept the former empty field for offline-client compatibility; no classification is active.
     domain_candidates: list[dict] = Field(default_factory=list, max_length=0)
     interaction: InteractionReflection | None = None
+    learning_request: TeachingRequest | None = None
+    turn_intent: TeachingTurn | None = None
     practice_origin: Literal["current_case", "personal_account", "different_case", "unclear"] = (
         "current_case"
     )
@@ -154,12 +158,17 @@ class LearningHypothesis(BaseModel):
     verification: str = Field(min_length=1, max_length=180)
 
 
-class CheckAnswerDecision(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
+class LegacyCheckAnswerDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, title="CheckAnswerDecision")
     verdict: Literal["matches", "partial", "does_not_match", "unclear", "needs_help", "not_answer"]
     reason: str = Field(min_length=1, max_length=180)
     source_message_id: str = Field(min_length=1, max_length=80)
     interaction: InteractionReflection | None = None
+
+
+class CheckAnswerDecision(LegacyCheckAnswerDecision):
+    reply: str | None = Field(default=None, min_length=1, max_length=1200)
+    turn_intent: TeachingTurn | None = None
 
 
 class CaseReviewDecision(BaseModel):

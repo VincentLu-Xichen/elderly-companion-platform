@@ -266,7 +266,7 @@ def begin(state):
     return next_prompt(state)
 
 
-def save_answer(state, latest, verdict, reason):
+def save_answer(state, latest, verdict, reason, *, feedback_reply=None):
     attempt, questions, _, _ = current(state)
     index = attempt["index"]
     attempt["answers"].append(
@@ -281,7 +281,7 @@ def save_answer(state, latest, verdict, reason):
         }
     )
     questions = RETRY_QUESTIONS if retrying(state) else QUESTIONS
-    feedback = (
+    feedback = (feedback_reply or (
         "这题先跳过，不作为答错。"
         if verdict == "not_observed"
         else (
@@ -289,7 +289,7 @@ def save_answer(state, latest, verdict, reason):
             if verdict == "matches"
             else "我们再区分一下。参考含义：" + questions[index]["expected"]
         )
-    ) + "\n"
+    )) + "\n"
     attempt["index"] += 1
     if attempt["index"] == len(questions):
         attempt["status"] = "completed"
@@ -299,35 +299,39 @@ def save_answer(state, latest, verdict, reason):
     return feedback + next_prompt(state)
 
 
-def hint(state, latest):
+def hint(state, latest, *, teaching_reply=None):
     attempt, _, question, _ = current(state)
     attempt["hints"].append(
         {
             "question_index": attempt["index"],
-            "text": question["hint"],
+            "text": teaching_reply if teaching_reply is not None else question["hint"],
             "requested_by_message_id": latest["id"],
         }
     )
-    return question["hint"] + "\n" + question["prompt"]
+    return teaching_reply if teaching_reply is not None else question["hint"] + "\n" + question["prompt"]
 
 
-def answer(state, latest, agent):
+def answer(state, latest, agent, history=None):
+    from cbt_course_llm_freeform import dialogue
+    from cbt_course_llm_freeform.runtime import faithful_excerpt
+
     text = latest["content"].strip()
     if any(word in text for word in ("再读一遍", "再看一遍", "重复题目")):
         return current(state)[3] + "\n" + current(state)[2]["prompt"], None
-    if text in {"不知道", "我不知道"} or any(
+    if not dialogue.enabled(state) and (text in {"不知道", "我不知道"} or any(
         word in text for word in ("没听懂", "不明白", "需要提示", "不知道怎么")
-    ):
+    )):
         return hint(state, latest), None
     _, _, question, story = current(state)
     result = agent.evaluate_answer(
-        [latest],
+        (history or [latest])[-24:],
         context={
             "story": story,
             "question": question["prompt"],
             "field": question["field"],
             "expected": question["expected"],
             "retry": retrying(state),
+            "classroom_dialogue": dialogue.context(state),
             "primary_interaction_decision": state.get("latest_interaction_event", {}).get(
                 "judgment"
             ),
@@ -343,16 +347,29 @@ def answer(state, latest, agent):
         return decision.interaction, result.completion
     if any(word in decision.reason for word in ("人格", "智力", "诊断", "理解能力差")):
         raise RuntimeError("检验判读包含不支持的个人标签。")
+    if decision.reply and any(word in decision.reply for word in (
+        "已完成本课", "本课已完成", "课程已完成", "已经完成课程", "已确认记录", "本课结束", "完全掌握", "[["
+    )):
+        raise RuntimeError("检验反馈声称了尚未执行的课程动作。")
+    if decision.turn_intent is not None:
+        teaching_turn = dialogue.resolve_turn(decision, latest, faithful_excerpt)
+        if teaching_turn["kind"] not in {"answer", "resume_course"} and decision.verdict not in {"not_answer", "needs_help"}:
+            raise ValueError("A conversational turn cannot be recorded as a concept answer")
+        dialogue.apply_turn(state, teaching_turn, latest,
+                            answer_evidence=decision.verdict not in {"not_answer", "needs_help"})
+    elif dialogue.context(state)["mode"] == "conversation" and decision.verdict not in {"not_answer", "needs_help"}:
+        raise ValueError("Returning to the current question requires sourced learner willingness")
     if decision.verdict == "needs_help":
-        return hint(state, latest), result.completion
+        return hint(state, latest, teaching_reply=decision.reply), result.completion
     if decision.verdict == "not_answer":
-        return "明白，这轮先不计作答，题目和已有回答保持不变。", result.completion
+        return decision.reply or "明白，这轮先不计作答，题目和已有回答保持不变。", result.completion
     if decision.verdict == "unclear" and state.get("latest_interaction_event", {}).get("judgment"):
         return (
             "这轮先不计作答，也不改变题目。您可以继续回答当前题，或直接说明想怎样调整。",
             result.completion,
         )
-    return save_answer(state, latest, decision.verdict, decision.reason), result.completion
+    return save_answer(state, latest, decision.verdict, decision.reason,
+                       feedback_reply=decision.reply), result.completion
 
 
 def stop_remaining(state, latest):

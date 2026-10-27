@@ -60,8 +60,9 @@ class NaturalDialogueTests(unittest.TestCase):
         state = new_course_state("lesson-1", reflection_policy="none");state["stage"] = "learning_goal"
         result = apply(state, "每周记录一次", agent=Navigator())
         self.assertIn("少一些自责", result.reply)
-        self.assertIn("每周记录一次", result.reply)
+        self.assertEqual(result.reply, "您希望少一些自责，我们可以从一项愿意尝试的练习开始。")
         self.assertIn("learning_goal_draft", result.state)
+        self.assertEqual(result.state["learning_goal_draft"]["items"][0]["value"], "每周记录一次")
         self.assertNotIn("learning_goal", result.state)
 
     def test_unexecuted_model_claims_do_not_override_receipt(self):

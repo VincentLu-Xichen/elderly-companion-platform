@@ -1,0 +1,83 @@
+{
+  "work_item": "029-responsive-single-prompt",
+  "snapshot_stage": "Offline checkpoint before live budget confirmation; zero-call fields below describe that stage only",
+  "followup_live_result": "live-result.v1.json",
+  "date": "2026-10-24",
+  "status": "Validating; implementation complete, live model/user effect not yet tested",
+  "baseline_commit": "9469acb90ca4e33f8f8189dcb7e3a961a8c9e59a",
+  "actual_code_identity": "Dirty worktree source snapshots and prompt hashes, not HEAD alone",
+  "before_version": "7.5-two-lesson-backend",
+  "candidate_version": "7.7-responsive-teaching",
+  "architecture": "Single teaching agent / one unified main prompt per lesson, existing auxiliary mechanisms retained",
+  "major_variable": "First-lesson unified prompt package: response priority, question timing and evidence contract; no isolated component-effect claim",
+  "scope_verification": {
+    "changed_course_files": [
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/catalog.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/lesson_1.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/prompt.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/tests/test_freeform.py"
+    ],
+    "controller_and_schema_unchanged": true,
+    "second_prompt_unchanged": true,
+    "independent_aux_prompts_unchanged": true,
+    "before_prompt_sha256": "e8e815fa59fcf7e72e09a2b63747665be3c185c54ce082e18934209e5eb08b16",
+    "after_prompt_sha256": "781fec01859aea397c64fd75c25298c2b33dde820c28e6306593c5afde47b281",
+    "before_prompt_characters": 10087,
+    "after_prompt_characters": 10875,
+    "major_variable": "First-lesson unified prompt package: response priority, question timing and evidence contract; no isolated component-effect claim",
+    "baseline_source_snapshot": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-pre-029-56c8af",
+    "candidate_source_snapshot": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-029-responsive-pair-0bd924\\candidate-snapshot",
+    "stage_and_source_guards_retained": true,
+    "new_api_calls": 0
+  },
+  "regression": {
+    "public_tests": 54,
+    "course_tests": 208,
+    "total": 262,
+    "result": "passed",
+    "new_test_purpose": "Two eval preflight protections, not dialogue-quality evidence"
+  },
+  "offline_json_replay": {
+    "before": {
+      "source_run": "20261024-112634-A1-D01-before-t1-da06ee",
+      "error": "同一字段不能在一轮中提交多个不同摘录。",
+      "input_state_unchanged": true,
+      "api_calls": 0,
+      "meaning": "Old JSON remains rejected; does not test how the model responds to the new prompt"
+    },
+    "after": {
+      "source_run": "20261024-112648-A1-D01-after-t1-cbc54a",
+      "error": "同一字段不能在一轮中提交多个不同摘录。",
+      "input_state_unchanged": true,
+      "api_calls": 0,
+      "meaning": "Old JSON remains rejected; does not test how the model responds to the new prompt"
+    }
+  },
+  "original_case_fixtures": "6 validated offline; previous A1 3 validated offline; new pair 2 validated offline",
+  "new_api_attempts": 0,
+  "new_model_outputs": [],
+  "new_final_replies": [],
+  "model_usage": null,
+  "verified_api_cost": null,
+  "model_wait_ms": null,
+  "live_budget": {
+    "status": "proposed, awaiting confirmation",
+    "total_limit": 12,
+    "per_arm_limit": 6,
+    "max_user_inputs_per_arm": 4,
+    "includes_auxiliary_and_failed_attempts": true,
+    "automatic_retries": 0,
+    "previous_closed_budget_reused": false
+  },
+  "human_experience_verdict": "Unable to judge new model behavior; no new live output",
+  "web_database_integration": "Not exercised in this turn; no service restart or real user DB used",
+  "open_issues": [
+    "R03 natural rating parser",
+    "R05 defer action",
+    "E03 case mixing",
+    "E04 compound confirmation",
+    "goal material contamination",
+    "possible unanswered-count effects on free conversation"
+  ],
+  "git_commit_tag_push_executed": false
+}

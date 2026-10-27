@@ -1,0 +1,142 @@
+{
+  "experiment": "20261024-A1-style-pair-6de712",
+  "baseline_commit": "9469acb90ca4e33f8f8189dcb7e3a961a8c9e59a",
+  "suite_version": "cbt12-a1-style/1",
+  "scope_verification": {
+    "first_prompt_only_approved_style_replaced": true,
+    "second_prompt_unchanged": true,
+    "schemas_unchanged": true,
+    "tracked_implementation_changes": [
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/catalog.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/prompt.py"
+    ],
+    "before_prompt_sha256": "e8e815fa59fcf7e72e09a2b63747665be3c185c54ce082e18934209e5eb08b16",
+    "after_prompt_sha256": "6a064abb6865db9b6d448119f3bdb91b8e741b7144c02ff58c87de0ea46564b2",
+    "course_version_metadata_change": "7.5-two-lesson-backend -> 7.6-a1-communication-style"
+  },
+  "initial_context_equivalence": [
+    {
+      "case": "E01-a",
+      "history_equal": true,
+      "state_differences": [
+        ".lesson_version"
+      ]
+    },
+    {
+      "case": "E01-R03",
+      "history_equal": true,
+      "state_differences": [
+        ".lesson_version"
+      ]
+    },
+    {
+      "case": "E01-R05",
+      "history_equal": true,
+      "state_differences": [
+        ".lesson_version"
+      ]
+    }
+  ],
+  "arms": {
+    "before": {
+      "calls": 4,
+      "input_tokens": 21401,
+      "output_tokens": 545,
+      "turn_wait_ms": 7142,
+      "model_names": [
+        "deepseek-flash"
+      ]
+    },
+    "after": {
+      "calls": 5,
+      "input_tokens": 22678,
+      "output_tokens": 623,
+      "turn_wait_ms": 10562,
+      "model_names": [
+        "deepseek-flash"
+      ]
+    }
+  },
+  "run_ids": {
+    "before": {
+      "initial": "20261024-110100-A1-before-f5dd09",
+      "continuation": "20261024-110142-A1-before-continue-160e3b"
+    },
+    "after": {
+      "initial": "20261024-110517-A1-after-bc45b6",
+      "continuation": "20261024-110609-A1-after-continue-9e184f"
+    }
+  },
+  "attempted_calls": 9,
+  "authorized_limit": 12,
+  "automatic_retries": 0,
+  "provider_failures": 0,
+  "turns_attempted": 8,
+  "turns_returned": 8,
+  "known_input_tokens": 44079,
+  "known_output_tokens": 1168,
+  "turn_wait_ms": 17704,
+  "first_token_wait": null,
+  "verified_cost": null,
+  "human_review": {
+    "reviewer": "Coding Agent; not user/teacher acceptance or blind evaluation",
+    "E01-a": {
+      "verdict": "无法判断为更好",
+      "reason": "候选仍复述完整记录并追问已明确0分；原版有不同的摘录/展示问题。候选采用6分是结构变化，不能当语气提升或稳定收益"
+    },
+    "E01-R03": {
+      "verdict": "相当",
+      "reason": "都解释了评分对象；候选‘深信不疑’更书面，未见明确更温和。后续七分两版均被解析拒绝"
+    },
+    "E01-R05": {
+      "verdict": "相当",
+      "reason": "候选增加‘不勉强’，仍复述记录；两版都未真正把本项标记暂留"
+    },
+    "decision": "Do not adopt this wording package; restore original runtime prompt/version; keep all evidence",
+    "limitations": "One sample per arm/case; cannot establish stability, general ineffectiveness of prompting, or clinical benefit"
+  },
+  "followup_user_review": {
+    "date": "2026-10-24",
+    "quote": "我能感受到新版本更礼貌一些了 是有意义的 但是我想看看完整的别的场景看看效果 比方说user表现很痛苦的时候",
+    "scope": "User-perceived politeness of the displayed A1 comparison; not a blinded review or a claim of stable/clinical benefit",
+    "disposition": "Keep the archived A1 wording as a candidate for further observation; the earlier Coding Agent decision was premature and remains recorded above as the initial decision",
+    "planned_card": "evals/cbt/a1-distress-card.v1.md",
+    "new_live_budget_status": "User confirmed new paired budget 12 total / 6 per arm / 3 inputs per arm; completed 2 attempts then stopped on both first-turn runtime failures, budget closed",
+    "followup_result": "distress-result.v1.json",
+    "additional_calls": 2,
+    "product_code_changed": false
+  },
+  "candidate_retained": false,
+  "candidate_retained_field_scope": "Runtime adoption only; original runtime was restored after the initial trial",
+  "candidate_archived_for_followup": true,
+  "runtime_restored": true,
+  "engineering_verification": {
+    "restored_public_regression": 52,
+    "restored_course_regression": 208,
+    "restored_all_passed": true,
+    "candidate_regression": "52 public passed; 207/208 course passed, one old version-literal assertion failed",
+    "sandbox_regression": "incomplete and interrupted; no model calls",
+    "initial_runner_test_environment": "2 temporary-directory permission errors; all 3 passed after using workspace temp",
+    "runtime_diff_from_pushed_checkpoint": [],
+    "offline_diagnosis": {
+      "rating_examples": {
+        "before": {
+          "raw_excerpt": "那句话当时我大概信七分",
+          "parse_result": null
+        },
+        "after": {
+          "raw_excerpt": "大概信七分",
+          "parse_result": null
+        }
+      },
+      "refusal_explicit_action": null,
+      "canonical_seven": 7,
+      "api_calls": 0
+    }
+  },
+  "phase_calls": {
+    "teaching": 8,
+    "case_review": 1,
+    "interaction_reflection": 0
+  }
+}

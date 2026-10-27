@@ -8,6 +8,7 @@ import re
 VERSION = "lesson-1-blueprint/1"
 FIELDS = ("situation", "thought", "thought_belief", "emotion", "emotion_intensity", "behavior")
 RATINGS = {"thought_belief": "thought", "emotion_intensity": "emotion"}
+RATING_SCALE = {"minimum": 0, "maximum": 10, "zero_is_valid": True}
 LABELS = {
     "thought_belief": "对想法的相信程度",
     "emotion_intensity": "情绪强度",
@@ -105,7 +106,7 @@ def parse_rating(quote):
     number = digits.get(raw, 2 if raw == "两" else None)
     if number is None:
         number = float(raw)
-    if not 0 <= number <= 10:
+    if not RATING_SCALE["minimum"] <= number <= RATING_SCALE["maximum"]:
         return None
     return int(number) if number == int(number) else number
 
@@ -135,6 +136,9 @@ def accept_rating(state, evidence, latest, focus):
         "case_id": state["case_id"],
         "about": copy.deepcopy(state["draft_record"][RATINGS[key]]),
     }
+    # A sourced voluntary score reopens only this item, including in review
+    # where the practice-stage after_turn cleanup is not run.
+    state["practice_flow"]["deferred"].pop(key, None)
     return True
 
 
@@ -171,12 +175,14 @@ def review_text(state, *, invite=True):
     return "\n".join(lines)
 
 
-def after_turn(state, focus, accepted, latest):
+def after_turn(state, focus, accepted, latest, *, answer_attempt=True, progress_allowed=True):
     flow = state["practice_flow"]
     for key in accepted:
         flow["deferred"].pop(key, None)
         flow["unanswered"].pop(key, None)
-    if focus and focus not in accepted:
+    if not progress_allowed:
+        return
+    if answer_attempt and focus and focus not in accepted:
         attempts = flow["unanswered"].setdefault(focus, [])
         attempts.append(latest["id"])
         if len(attempts) >= 2:
@@ -187,6 +193,26 @@ def after_turn(state, focus, accepted, latest):
     settle_fictional_ratings(state, latest)
     if not missing(state):
         state["stage"] = "review"
+
+
+def pending_task(state):
+    """Teaching facts for the model, without a prewritten next question."""
+    pending = missing(state)
+    focus = next(iter(pending), None) if state["stage"] == "practice" else None
+    target = state["draft_record"].get(RATINGS.get(focus), {})
+    return {
+        "stage": state["stage"],
+        "pending_fields": pending,
+        "deferred_fields": [key for key in FIELDS if key in state["practice_flow"]["deferred"]],
+        "suggested_field": focus,
+        "label": LABELS.get(focus),
+        "rating_target": copy.deepcopy(target) if focus in RATINGS else None,
+        "scale": ({"minimum": RATING_SCALE["minimum"], "maximum": RATING_SCALE["maximum"],
+                   "meaning": "相信程度" if focus == "thought_belief" else "情绪强度",
+                   "optional": True} if focus in RATINGS else None),
+        "purpose": "理解并区分同一案例的情境、想法、情绪、行为，评分是可暂留的教学环节。",
+        "question_required": False,
+    }
 
 
 def instruction(state):
@@ -247,6 +273,7 @@ def payload(state):
         "source_kind": boundaries.source(state)["kind"],
         "case_id": state["case_id"],
         "ratings": copy.deepcopy(flow["ratings"]),
+        "rating_scale": copy.deepcopy(RATING_SCALE),
         "relationship": copy.deepcopy(flow["relationship"]),
         "current_field": next(iter(missing(state)), None) if state["stage"] == "practice" else None,
         "concepts": [CONCEPTS[key] for key in CONCEPTS],

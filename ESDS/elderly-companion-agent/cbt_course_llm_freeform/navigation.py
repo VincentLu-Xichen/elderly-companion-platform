@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
+from cbt_course_llm_freeform.dialogue import TeachingTurn
 
 VERSION = "course-navigation/1"
 
@@ -54,6 +55,7 @@ class NavigationDecision(BaseModel):
     goal_items: list[str] = Field(default_factory=list, max_length=10)
     goal_level: Literal["direction", "concrete"] = "concrete"
     goal_updates: list[GoalUpdate] = Field(default_factory=list, max_length=5)
+    turn_intent: TeachingTurn | None = None
 
 
 def validate(decision, state, latest):

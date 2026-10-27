@@ -1,0 +1,685 @@
+{
+  "experiment": "20261024-029-responsive-pair-0bd924",
+  "suite_version": "cbt12-a1-responsive/1",
+  "baseline_commit": "9469acb90ca4e33f8f8189dcb7e3a961a8c9e59a",
+  "code_identity": "Dirty worktree/source snapshots and exact prompt hashes; explicit old-prompt override on unchanged controller",
+  "versions": {
+    "before": "7.5-two-lesson-backend",
+    "after": "7.7-responsive-teaching"
+  },
+  "budget_limit": 12,
+  "per_arm_limit": 6,
+  "attempted_calls": 5,
+  "unused_calls": 7,
+  "automatic_retries": 0,
+  "provider_failures": 0,
+  "schema_valid_responses": 5,
+  "runtime_successes": 1,
+  "runtime_failures": 4,
+  "full_D01_trajectory_completed": false,
+  "tokens": {
+    "prompt_tokens": 28326,
+    "completion_tokens": 978,
+    "total_tokens": 29304
+  },
+  "turn_wait_ms": 10224,
+  "first_token_wait_ms": null,
+  "verified_cost": null,
+  "followup_user_feedback": {
+    "date": "2026-10-24",
+    "quote": "没错 这次改动是有价值的",
+    "scope": "User endorses the value of this revision after seeing the actual comparison; not per-case scoring or full baseline acceptance",
+    "disposition": "Retain 7.7 as a validating working candidate and continue improving the existing single-teaching-agent / per-lesson unified prompt baseline",
+    "unresolved_pause_contract_retained": true,
+    "recorded_after_capture": true,
+    "raw_outputs_unchanged": true,
+    "additional_api_calls_for_feedback": 0
+  },
+  "arms": {
+    "before": {
+      "calls": 2,
+      "tokens": {
+        "prompt_tokens": 10725,
+        "completion_tokens": 443,
+        "total_tokens": 11168
+      },
+      "turn_wait_ms": 4160,
+      "successful_turns": 0
+    },
+    "after": {
+      "calls": 3,
+      "tokens": {
+        "prompt_tokens": 17601,
+        "completion_tokens": 535,
+        "total_tokens": 18136
+      },
+      "turn_wait_ms": 6064,
+      "successful_turns": 1
+    }
+  },
+  "turns": [
+    {
+      "run_id": "20261024-114620-A1-D01-before-t1-3a9e7a",
+      "case": "A1-D01",
+      "arm": "before",
+      "turn": 1,
+      "input": "我现在一想到昨天那场考试就很难受。回宿舍哭了很久，觉得自己特别没用，今天也不想见人。",
+      "raw_model_json": [
+        {
+          "reply": "听您说昨天那场考试现在还让您很难受，回宿舍哭了很久，今天也不想见人，这些都不容易。之前记录的那条想法是“别人肯定都会，只有我不会”，当时您有多相信它？0分是不相信，10分是非常相信；也可以先不评分。",
+          "observations": [
+            {
+              "field": "emotion",
+              "value": "一想到昨天那场考试就很难受",
+              "source_message_id": "A1-D01-user-1"
+            },
+            {
+              "field": "behavior",
+              "value": "回宿舍哭了很久",
+              "source_message_id": "A1-D01-user-1"
+            },
+            {
+              "field": "behavior",
+              "value": "今天也不想见人",
+              "source_message_id": "A1-D01-user-1"
+            }
+          ],
+          "next_practice_field": "thought_belief",
+          "practice_origin": "current_case",
+          "assessment": {
+            "signals": []
+          }
+        }
+      ],
+      "status": "error",
+      "final_reply": null,
+      "error_message": "同一字段不能在一轮中提交多个不同摘录。",
+      "state_unchanged_on_failure": true,
+      "stage": "practice",
+      "paused": false,
+      "ratings": {},
+      "deferred": {},
+      "unanswered": {},
+      "record": {
+        "situation": {
+          "value": "数学考试最后一道题没做出来",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "thought": {
+          "value": "别人肯定都会，只有我不会",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "emotion": {
+          "value": "担心",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "behavior": {
+          "value": "考完一直翻答案",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        }
+      },
+      "model_calls": [
+        {
+          "phase": "teaching",
+          "prompt_hash": "e8e815fa59fcf7e72e09a2b63747665be3c185c54ce082e18934209e5eb08b16",
+          "status": "success",
+          "token_limit": 1200,
+          "model": "deepseek-flash",
+          "deployment": "deepseek-flash",
+          "request_id": "",
+          "usage": {
+            "prompt_tokens": 5365,
+            "completion_tokens": 170,
+            "total_tokens": 5535
+          },
+          "finish_reason": "stop",
+          "latency_ms": 1692
+        }
+      ],
+      "program_checks": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    },
+    {
+      "run_id": "20261024-114627-A1-D01-after-t1-a483be",
+      "case": "A1-D01",
+      "arm": "after",
+      "turn": 1,
+      "input": "我现在一想到昨天那场考试就很难受。回宿舍哭了很久，觉得自己特别没用，今天也不想见人。",
+      "raw_model_json": [
+        {
+          "reply": "听您说回宿舍哭了很久，今天也不想见人，这确实很难受。这会儿先不用打分或整理记录，我陪您把这份难受放一放就好。",
+          "observations": [],
+          "assessment": {
+            "signals": []
+          },
+          "practice_origin": "current_case",
+          "next_practice_field": null
+        }
+      ],
+      "status": "success",
+      "final_reply": "听您说回宿舍哭了很久，今天也不想见人，这确实很难受。这会儿先不用打分或整理记录，我陪您把这份难受放一放就好。",
+      "error_message": null,
+      "state_unchanged_on_failure": null,
+      "stage": "practice",
+      "paused": false,
+      "ratings": {},
+      "deferred": {},
+      "unanswered": {
+        "thought_belief": [
+          "A1-D01-user-1"
+        ]
+      },
+      "record": {
+        "situation": {
+          "value": "数学考试最后一道题没做出来",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "thought": {
+          "value": "别人肯定都会，只有我不会",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "emotion": {
+          "value": "担心",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "behavior": {
+          "value": "考完一直翻答案",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        }
+      },
+      "model_calls": [
+        {
+          "phase": "teaching",
+          "prompt_hash": "781fec01859aea397c64fd75c25298c2b33dde820c28e6306593c5afde47b281",
+          "status": "success",
+          "token_limit": 1200,
+          "model": "deepseek-flash",
+          "deployment": "deepseek-flash",
+          "request_id": "",
+          "usage": {
+            "prompt_tokens": 5835,
+            "completion_tokens": 68,
+            "total_tokens": 5903
+          },
+          "finish_reason": "stop",
+          "latency_ms": 1583
+        }
+      ],
+      "program_checks": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    },
+    {
+      "run_id": "20261024-114653-A1-D01-after-t2-8fb3ac",
+      "case": "A1-D01",
+      "arm": "after",
+      "turn": 2,
+      "input": "先别让我打分，也别急着讲道理。我只是想把这股难受说出来。",
+      "raw_model_json": [
+        {
+          "reply": "好，我不打分，也不讲道理。您愿意说什么，我就听着；想停一停也可以。",
+          "observations": [],
+          "interaction": {
+            "verdict": "not_feedback",
+            "source_message_id": "A1-D01-user-2",
+            "quote": "先别让我打分，也别急着讲道理。我只是想把这股难受说出来。",
+            "observation": "学习者明确表示此刻不想评分、不想听讲解，只想把难受说出来。",
+            "hypothesis": "当前更需要被听见，暂时不想进入记录或分析。",
+            "alternative_explanation": "也可能只是这一会儿累了，先缓一缓再说。",
+            "scope": "lesson",
+            "reply_length": "short",
+            "follow_up": "stop",
+            "reply": "好，我不打分，也不讲道理。您愿意说什么，我就听着；想停一停也可以。",
+            "personal_intent": "pause",
+            "response_type": "acknowledge_adjustment",
+            "tone": "polite",
+            "task_action": "pause"
+          }
+        }
+      ],
+      "status": "error",
+      "final_reply": null,
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "state_unchanged_on_failure": true,
+      "stage": "practice",
+      "paused": false,
+      "ratings": {},
+      "deferred": {},
+      "unanswered": {
+        "thought_belief": [
+          "A1-D01-user-1"
+        ]
+      },
+      "record": {
+        "situation": {
+          "value": "数学考试最后一道题没做出来",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "thought": {
+          "value": "别人肯定都会，只有我不会",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "emotion": {
+          "value": "担心",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "behavior": {
+          "value": "考完一直翻答案",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        }
+      },
+      "model_calls": [
+        {
+          "phase": "teaching",
+          "prompt_hash": "781fec01859aea397c64fd75c25298c2b33dde820c28e6306593c5afde47b281",
+          "status": "success",
+          "token_limit": 1200,
+          "model": "deepseek-flash",
+          "deployment": "deepseek-flash",
+          "request_id": "",
+          "usage": {
+            "prompt_tokens": 5936,
+            "completion_tokens": 193,
+            "total_tokens": 6129
+          },
+          "finish_reason": "stop",
+          "latency_ms": 2059
+        }
+      ],
+      "program_checks": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    },
+    {
+      "run_id": "20261024-114751-A1-D02-before-t1-7bedc8",
+      "case": "A1-D02",
+      "arm": "before",
+      "turn": 1,
+      "input": "我这两天一想到那道题就掉眼泪。现在脑子很乱，你刚才说的我也听不进去，让我缓一会儿。",
+      "raw_model_json": [
+        {
+          "reply": "听您说这两天一想到那道题就掉眼泪，现在脑子也很乱，先缓一缓是可以的，不用马上回答。这道题和哭这件事，我先记着，等您愿意时再一起看。",
+          "observations": [
+            {
+              "field": "emotion",
+              "value": "这两天一想到那道题就掉眼泪",
+              "source_message_id": "A1-D02-user-1"
+            }
+          ],
+          "advance": false,
+          "assessment": {
+            "signals": []
+          },
+          "interaction": {
+            "verdict": "not_feedback",
+            "source_message_id": "A1-D02-user-1",
+            "quote": "现在脑子很乱，你刚才说的我也听不进去，让我缓一会儿。",
+            "observation": "学习者说脑子乱、听不进去，希望先缓一会儿。",
+            "hypothesis": "当前需要暂停追问，可能此刻内容负担较重。",
+            "alternative_explanation": "也可能只是暂时状态不佳，稍后仍可继续。",
+            "scope": "lesson",
+            "reply_length": "short",
+            "follow_up": "stop",
+            "reply": "听您说脑子很乱、听不进去，先缓一缓可以，不用马上回答。",
+            "personal_intent": "pause",
+            "response_type": "acknowledge_adjustment",
+            "tone": "standard",
+            "task_action": "pause"
+          },
+          "practice_origin": "current_case",
+          "next_practice_field": "thought_belief",
+          "case_options": []
+        }
+      ],
+      "status": "error",
+      "final_reply": null,
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "state_unchanged_on_failure": true,
+      "stage": "practice",
+      "paused": false,
+      "ratings": {},
+      "deferred": {},
+      "unanswered": {},
+      "record": {
+        "situation": {
+          "value": "数学考试最后一道题没做出来",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "thought": {
+          "value": "别人肯定都会，只有我不会",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "emotion": {
+          "value": "担心",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "behavior": {
+          "value": "考完一直翻答案",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        }
+      },
+      "model_calls": [
+        {
+          "phase": "teaching",
+          "prompt_hash": "e8e815fa59fcf7e72e09a2b63747665be3c185c54ce082e18934209e5eb08b16",
+          "status": "success",
+          "token_limit": 1200,
+          "model": "deepseek-flash",
+          "deployment": "deepseek-flash",
+          "request_id": "",
+          "usage": {
+            "prompt_tokens": 5360,
+            "completion_tokens": 273,
+            "total_tokens": 5633
+          },
+          "finish_reason": "stop",
+          "latency_ms": 2464
+        }
+      ],
+      "program_checks": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    },
+    {
+      "run_id": "20261024-114800-A1-D02-after-t1-d2c4e9",
+      "case": "A1-D02",
+      "arm": "after",
+      "turn": 1,
+      "input": "我这两天一想到那道题就掉眼泪。现在脑子很乱，你刚才说的我也听不进去，让我缓一会儿。",
+      "raw_model_json": [
+        {
+          "reply": "听起来这两天很不好受，一想到那道题就掉眼泪，脑子也乱。我们先不往下问了，您可以就这样歇一会儿，等想继续时再说；不想继续也完全可以。",
+          "observations": [],
+          "advance": false,
+          "assessment": {
+            "signals": []
+          },
+          "interaction": {
+            "verdict": "not_feedback",
+            "source_message_id": "A1-D02-user-1",
+            "quote": "我这两天一想到那道题就掉眼泪。现在脑子很乱，你刚才说的我也听不进去，让我缓一会儿。",
+            "observation": "学习者说想到那道题就掉眼泪、脑子乱，当前听不进讲解，希望缓一缓。",
+            "hypothesis": "当前情绪负担较重，暂时难以继续做评分和辨认任务。",
+            "alternative_explanation": "也可能只是需要短暂停一下，稍后愿意继续。",
+            "scope": "lesson",
+            "reply_length": "short",
+            "follow_up": "stop",
+            "reply": "听起来这两天很不好受，一想到那道题就掉眼泪，脑子也乱。我们先不往下问了，您可以就这样歇一会儿，等想继续时再说；不想继续也完全可以。",
+            "personal_intent": "pause",
+            "response_type": "acknowledge_adjustment",
+            "tone": "polite",
+            "task_action": "pause"
+          },
+          "practice_origin": "current_case",
+          "next_practice_field": null,
+          "case_options": []
+        }
+      ],
+      "status": "error",
+      "final_reply": null,
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "state_unchanged_on_failure": true,
+      "stage": "practice",
+      "paused": false,
+      "ratings": {},
+      "deferred": {},
+      "unanswered": {},
+      "record": {
+        "situation": {
+          "value": "数学考试最后一道题没做出来",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "thought": {
+          "value": "别人肯定都会，只有我不会",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "emotion": {
+          "value": "担心",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        },
+        "behavior": {
+          "value": "考完一直翻答案",
+          "source_message_id": "seed-user",
+          "source_kind": "personal"
+        }
+      },
+      "model_calls": [
+        {
+          "phase": "teaching",
+          "prompt_hash": "781fec01859aea397c64fd75c25298c2b33dde820c28e6306593c5afde47b281",
+          "status": "success",
+          "token_limit": 1200,
+          "model": "deepseek-flash",
+          "deployment": "deepseek-flash",
+          "request_id": "",
+          "usage": {
+            "prompt_tokens": 5830,
+            "completion_tokens": 274,
+            "total_tokens": 6104
+          },
+          "finish_reason": "stop",
+          "latency_ms": 2416
+        }
+      ],
+      "program_checks": {
+        "same_case": true,
+        "no_invented_scores": true,
+        "not_confirmed": true,
+        "not_completed": true
+      }
+    }
+  ],
+  "verification": {
+    "pairs": {
+      "A1-D01": {
+        "history_equal": true,
+        "first_input_equal": true,
+        "initial_state_differences": [
+          ".lesson_version"
+        ],
+        "parameters_equal": true
+      },
+      "A1-D02": {
+        "history_equal": true,
+        "first_input_equal": true,
+        "initial_state_differences": [
+          ".lesson_version"
+        ],
+        "parameters_equal": true
+      }
+    },
+    "all_python_files_during_capture": 127,
+    "python_drift_during_capture": {
+      "20261024-114620-A1-D01-before-t1-3a9e7a": [],
+      "20261024-114627-A1-D01-after-t1-a483be": [],
+      "20261024-114653-A1-D01-after-t2-8fb3ac": [],
+      "20261024-114751-A1-D02-before-t1-7bedc8": [],
+      "20261024-114800-A1-D02-after-t1-d2c4e9": []
+    },
+    "prompts_match_frozen_hashes": true,
+    "future_inputs_and_review_metadata_not_sent": true,
+    "explicit_module_env_source": true,
+    "env_file_unchanged": true,
+    "source_archives_intact": true,
+    "controller_schema_second_prompt_aux_unchanged": true
+  },
+  "offline_diagnosis": [
+    {
+      "run_id": "20261024-114620-A1-D01-before-t1-3a9e7a",
+      "variant": "exact",
+      "api_calls": 0,
+      "synthetically_edited_json": false,
+      "outcome": "error",
+      "error_type": "RuntimeError",
+      "error_message": "同一字段不能在一轮中提交多个不同摘录。",
+      "input_state_unchanged": true
+    },
+    {
+      "run_id": "20261024-114653-A1-D01-after-t2-8fb3ac",
+      "variant": "exact",
+      "api_calls": 0,
+      "synthetically_edited_json": false,
+      "outcome": "error",
+      "error_type": "ValueError",
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "input_state_unchanged": true
+    },
+    {
+      "run_id": "20261024-114653-A1-D01-after-t2-8fb3ac",
+      "variant": "diagnostic_verdict_only",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": true,
+      "stage": "practice",
+      "deferred": {},
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    },
+    {
+      "run_id": "20261024-114653-A1-D01-after-t2-8fb3ac",
+      "variant": "diagnostic_no_interaction",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": false,
+      "stage": "practice",
+      "deferred": {
+        "thought_belief": {
+          "status": "not_observed",
+          "source_message_ids": [
+            "A1-D01-user-1",
+            "A1-D01-user-2"
+          ]
+        }
+      },
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    },
+    {
+      "run_id": "20261024-114751-A1-D02-before-t1-7bedc8",
+      "variant": "exact",
+      "api_calls": 0,
+      "synthetically_edited_json": false,
+      "outcome": "error",
+      "error_type": "ValueError",
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "input_state_unchanged": true
+    },
+    {
+      "run_id": "20261024-114751-A1-D02-before-t1-7bedc8",
+      "variant": "diagnostic_verdict_only",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": true,
+      "stage": "practice",
+      "deferred": {},
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    },
+    {
+      "run_id": "20261024-114751-A1-D02-before-t1-7bedc8",
+      "variant": "diagnostic_no_interaction",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": false,
+      "stage": "practice",
+      "deferred": {},
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    },
+    {
+      "run_id": "20261024-114800-A1-D02-after-t1-d2c4e9",
+      "variant": "exact",
+      "api_calls": 0,
+      "synthetically_edited_json": false,
+      "outcome": "error",
+      "error_type": "ValueError",
+      "error_message": "Task adjustment lacks valid lesson-one feedback",
+      "input_state_unchanged": true
+    },
+    {
+      "run_id": "20261024-114800-A1-D02-after-t1-d2c4e9",
+      "variant": "diagnostic_verdict_only",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": true,
+      "stage": "practice",
+      "deferred": {},
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    },
+    {
+      "run_id": "20261024-114800-A1-D02-after-t1-d2c4e9",
+      "variant": "diagnostic_no_interaction",
+      "api_calls": 0,
+      "synthetically_edited_json": true,
+      "outcome": "success",
+      "paused": false,
+      "stage": "practice",
+      "deferred": {},
+      "input_state_unchanged": true,
+      "meaning": "Artificial diagnosis only. Changing verdict to feedback permits whole-course pause and can broaden a local request; not an implemented fix. Removing interaction also discards the proposed action and does not validate a repair."
+    }
+  ],
+  "coding_agent_review": {
+    "D01_first_turn": {
+      "verdict": "更好（该单次样本，Coding Agent初评）",
+      "reason": "7.7回应具体痛苦，不索分数或核对，空摘录保留原记录并取得正式reply；7.5原文仍索分且重复behavior失败。‘把难受放一放就好’措辞仍可斟酌"
+    },
+    "D01_second_turn": {
+      "verdict": "最终体验失败，无法作同轮新旧胜负比较",
+      "reason": "文案尊重倾诉，但not_feedback与pause组合被程序拒绝；原版未到达本轮，不补造对照"
+    },
+    "D02_first_turn": {
+      "verdict": "最终体验均失败；原始文案相当",
+      "reason": "两版都能说先缓一缓，仍把局部需要缓缓提议为整课pause并标not_feedback，无法执行"
+    },
+    "disposition": "Keep 7.7 as a validating working candidate; do not mark baseline ready. Next problem is coherent local listening/refusal versus explicit whole-course pause, retaining legal-action guards.",
+    "limitations": "One sample per reachable turn; Coding Agent initial review is separate from the subsequent user endorsement of revision value. No blind/per-case user or teacher scoring; cannot prove stable generalization, full-course quality or clinical benefit"
+  },
+  "engineering": {
+    "regression": "54 public + 208 course = 262 passed before capture; product/eval code unchanged during capture",
+    "live_invariants_note": "Invariants true on error rows only show rollback, not dialogue success"
+  },
+  "limits": [
+    "No complete multi-turn distress conversation",
+    "No normal-scoring live rerun, finite repeats, full course or web test in this budget",
+    "No real-user database/refresh/cross-course memory or clinical-effect validation"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "suite_version": "cbt12-a1-style/1",
+  "fixture_version": "a1-style-fixtures/1",
+  "scope": "028 approved three-case paired comparison; synthetic, reviewer metadata never sent to the teaching model",
+  "cases": [
+    {
+      "id": "E01-a",
+      "lesson": "lesson-1",
+      "fixture": "first-learn",
+      "title": "原单轮多项信息与零分保护",
+      "turns": ["昨天数学考试最后一道题没做出来。我当时想，别人肯定都会，只有我不会；我对这个想法的相信程度是0分。心情是担心，情绪强度6分。考完我一直翻答案。"],
+      "continuation": null,
+      "human_review": ["具体自然的承接而非整份记录复述", "保留四项与零分，不代确认"]
+    },
+    {
+      "id": "E01-R03",
+      "lesson": "lesson-1",
+      "fixture": "first-belief-rating",
+      "title": "相信程度评分被误解为考试成绩",
+      "turns": ["什么叫相信几分？是在问我考得好不好吗？"],
+      "continuation": "明白了，那句话当时我大概信七分。",
+      "continuation_gate": "Human review confirms the agent explained belief versus exam performance and invited an answer; the turn succeeded and belief remains the current focus",
+      "human_review": ["解释易懂、温和、有分寸，回应具体误解", "不记录未提供的分数；条件满足后才发送后续输入"]
+    },
+    {
+      "id": "E01-R05",
+      "lesson": "lesson-1",
+      "fixture": "first-emotion-rating",
+      "title": "明确本项不评分，其他继续",
+      "turns": ["这项先不打分，其他的可以继续。"],
+      "continuation": null,
+      "human_review": ["尊重本项选择，表达自然，不反复劝分", "强度留空，不扩大拒绝范围，不代确认"]
+    }
+  ]
+}

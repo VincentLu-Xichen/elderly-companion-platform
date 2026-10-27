@@ -1,6 +1,19 @@
 # 前两课可复用测试数据
 
-最新工作（2026-10-24）：用户同意[前两课测试样本cbt12-review/2](case-review.v2.md)按当前设计收束，之后合适位置再显式修订：两条条件式正常路径、8组34张局部分支，输入/卡数不变。尚未运行或接入运行器，不更换默认cases.v1；[v1意见稿](case-review.v1.md)和旧输出保留。接下来恢复[A1优化设计028](../../specs/028-a1-prompt-style/spec.md)，建议第一步只检验第一课主Prompt表达风格段，当前未改Agent/参数或发模型请求，不构成批跑授权。
+最新人工体验准备（2026-10-26）：[第一课7.9逐轮测试数据](manual.lesson1-dialogue.v1.md)及[结构化输入](manual.lesson1-dialogue.v1.json)。保留原女儿未接电话4条输入，另有条件式倾诉／返回分支；人工逐条发送，没有自动批跑或新通过结果。
+
+**030（2026-10-24）**：[局部请求固定卡](cases.scoped-requests.v1.json)与[四轮查看](../../specs/030-scoped-learning-requests/conversation.md)。新卡独立版本，不改原cases.v1/case-review.v2；运行器`scripts/run_scoped_request_eval.py`默认离线0API。12次真实预算已关闭，最终7.8.5只经277项离线和原JSON回放；前三轮真实成功、停课真实失败保留，不能称完整真实多轮通过。
+
+
+最新029（2026-10-24）：第一课7.7主Prompt修订、262项离线检查后，用户确认D01多轮＋D02变体两版总≤12请求；实际5次/29,304 tokens/10.224秒，接口全返回、课程1成功4失败。7.7 D01首轮正式成功且不追分，第二轮及D02被not_feedback＋pause协议拒绝；完整多轮未取得，0API回放复现、余量7次关闭，不改Prompt挑输出。见[真实报告](../../specs/029-responsive-single-prompt/live-report.md)、[JSON/最终/状态全文](../../specs/029-responsive-single-prompt/transcripts.md)及[显式执行组](cases.a1-responsive.v1.json)。程序/模型/参数/第二课不变，7.7仍Validating；旧案例和失败不改。029使用显式suite/case和冻结Prompt目录，旧028默认仍会拒绝版本漂移，不自动重跑。
+
+最新A1-D01（2026-10-24）：用户确认新增新旧版≤12请求，实际2次/11,258 tokens/3.776秒，两版均首轮重复behavior摘录被运行时拒绝，未形成成功最终回复。按[体验卡](a1-distress-card.v1.md)停止，后续未跑、0重试，余量关闭；0API原JSON回放已复现，未改Agent。见[场景结果](../../specs/028-a1-prompt-style/distress-report.md)、[真实JSON/状态](../../specs/028-a1-prompt-style/distress-transcripts.md)。此结果不抹去用户此前对候选礼貌改善的反馈；以下待确认/0新增均为此前时点。
+
+后续用户反馈（2026-10-24）：用户看过028后认为候选更礼貌、值得继续观察。已整理[强烈难过的多轮体验卡A1-D01](a1-distress-card.v1.md)：最多3条用户输入，观察承接、暂不评分与自主继续/暂停；原34张卡不改。新卡尚未执行/接入运行器，新增配对12请求提议待确认，当前0新增请求；A1仍为归档候选，运行代码保持恢复后的原版。下文“不采纳”是首轮Coding Agent收束，不代替此后用户评价。
+
+最新实测（2026-10-24，028）：按授权完成旧E01-a及当前审阅卡R03/R05的真实前后对照，共9/12请求、45,247 tokens、17.704秒后端轮次等待。语气改善证据不足，两版都存在七分未采用/本项未暂留；本轮不采纳候选并恢复原Prompt，260项离线检查通过。完整[报告](../../specs/028-a1-prompt-style/report.md)、[真实JSON/展示/状态](../../specs/028-a1-prompt-style/transcripts.md)、[费用登记](../../specs/028-a1-prompt-style/usage-ledger.md)；新增`run_a1_style_eval.py`默认离线、显式live，前后共享12次总预算。本次授权预算已收束，不自动重跑。
+
+此前设计时点（2026-10-24，未执行描述为028试验前）：用户同意[前两课测试样本cbt12-review/2](case-review.v2.md)按当前设计收束，之后合适位置再显式修订：两条条件式正常路径、8组34张局部分支，输入/卡数不变。当时尚未运行或接入运行器，不更换默认cases.v1；[v1意见稿](case-review.v1.md)和旧输出保留。随后恢复[A1优化设计028](../../specs/028-a1-prompt-style/spec.md)，第一步只检验第一课主Prompt表达风格段，实测进展以顶部为准，不构成批跑授权。
 
 ## 最新当前baseline：027（2026-10-24）
 

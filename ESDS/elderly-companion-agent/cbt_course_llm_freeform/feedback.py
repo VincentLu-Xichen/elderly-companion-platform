@@ -54,12 +54,16 @@ def decide_trigger(
     signals: list[dict],
     changed_fields: list[str],
     stage_before: str,
+    answer_attempt: bool = True,
 ) -> dict:
     """Inputs are validated by runtime; this function never reads a clock or calls a model."""
     policy = workflow["policy"]
     workflow["ordinary_turns"] += 1
     no_progress = stage_before == "practice" and task_before == task_after and not changed_fields
-    workflow["no_progress_count"] = workflow["no_progress_count"] + 1 if no_progress else 0
+    if answer_attempt:
+        workflow["no_progress_count"] = workflow["no_progress_count"] + 1 if no_progress else 0
+    elif changed_fields or task_before != task_after:
+        workflow["no_progress_count"] = 0
     events = []
     for signal in signals:
         kind = signal["kind"]
@@ -69,7 +73,7 @@ def decide_trigger(
             events.append("comparable_conflict")
         elif kind == "new_evidence" and signal.get("replaces_existing"):
             events.append("changed_existing_evidence")
-    if workflow["no_progress_count"] >= 2:
+    if answer_attempt and workflow["no_progress_count"] >= 2:
         events.append("repeated_no_progress")
     reasons = []
     if policy == "per_turn":

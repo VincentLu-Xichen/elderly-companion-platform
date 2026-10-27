@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 from cbt_course_llm_freeform.agent import FreeformCourseAgent
 from cbt_course_llm_freeform.azure_chat_client import AzureChatCompletionsClient, ChatCompletionResult
-from cbt_course_llm_freeform.catalog import LESSON_2_VERSION, course_by_id
+from cbt_course_llm_freeform.catalog import LESSON_1_VERSION, LESSON_2_VERSION, course_by_id
 from cbt_course_llm_freeform.prompt import prompt_for_lesson
 LESSON_2_SYSTEM_PROMPT = prompt_for_lesson("lesson-2")
 from cbt_course_llm_freeform.tests.shared_turn_fixture import shared_state
@@ -214,7 +214,7 @@ class FreeformServiceTest(unittest.TestCase):
         self.assertTrue(resumed)
         self.assertEqual(same.id, conversation.id)
         self.assertEqual(conversation.agent_version, AGENT_VERSION)
-        self.assertIn("7.5-two-lesson-backend", conversation.active_course_key)
+        self.assertIn(LESSON_1_VERSION, conversation.active_course_key)
         self.assertIsNone(conversation.scenario_snapshot_encrypted)
 
         conversation.agent_version = "course-v1"

@@ -188,7 +188,7 @@ class PreviewClient:
                     "clarify_missing_field": "已经有的记录先保留，我们只补这一项。",
                     "ask_concrete_fact": "可以暂时不确定，我们只看具体依据。",
                 }.get(strategy, "我们按您刚才的回答继续。")
-                output = {"reply": lead + context["next_question"]}
+                output = {"reply": lead + context.get("next_question", "")}
             else:
                 output = self._teaching(context, latest)
         return ChatCompletionResult(
@@ -200,6 +200,8 @@ class PreviewClient:
     @staticmethod
     def _check(context, latest):
         text = latest["text"].strip()
+        if text in {"不知道", "我不知道"} or any(word in text for word in ("没听懂", "不明白", "需要提示", "不知道怎么")):
+            return {"verdict": "needs_help", "reason": "规则体验：请求概念帮助。", "source_message_id": latest["id"]}
         field = context["field"]
         retry = context["retry"]
         patterns = {

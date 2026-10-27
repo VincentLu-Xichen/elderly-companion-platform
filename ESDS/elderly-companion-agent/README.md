@@ -1,5 +1,7 @@
 # 老人陪伴 Agent：Daily Chat 与对话式 CBT 课程
 
+**最新031（2026-10-26）**：用户授权并纠正为最早六项交流要求，已落地第一课7.9-dialogue-ownership：结构化待办、模型组织正常语言、有来源的交流／邀请／恢复、非作答不耗次，贯通原学习请求、导航和判题。第二课6.2、provider／参数、前端、.env及真实库不改。306项离线检查（新增29项）、60份freeform源码语法与原4份JSON回放通过；新增真实请求0，不代表新Prompt真实效果／网页通过，R-010仍Validating。原评分暂留范围差异等已知问题保留，B／C／D后置，未重启或提交。具体板块、调用变化、证据和Git指导见[031报告](specs/031-lesson1-dialogue-ownership/report.md)。下方其他“最新／当前”为历史时点。
+
 ## 最新：当前A基座baseline数据（027，2026-10-24）
 
 已按用户要求、以模块.env为准，采集原6例8轮：9次模型请求均返回，7轮程序成功、1轮拒绝，既定检查5/6。E03发生考试/室友事实混写与返回来源失败，数据照实保留；257项离线回归通过不代表对话质量通过。共31,201 tokens、完整等待16.447秒，金额由用户按账单补记。本轮不改产品/Prompt或进入新架构。[报告](specs/027-baseline-data/report.md)、[完整原话](specs/027-baseline-data/transcripts.md)、[tokens/费用登记](specs/027-baseline-data/usage-ledger.md)。

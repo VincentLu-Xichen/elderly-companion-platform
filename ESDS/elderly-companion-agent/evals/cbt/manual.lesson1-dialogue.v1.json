@@ -1,0 +1,41 @@
+{
+  "suite_version": "manual-lesson1-dialogue/1",
+  "synthetic": true,
+  "lesson": "lesson-1",
+  "lesson_version": "7.9-dialogue-ownership",
+  "mode": "human-paced-no-automatic-runner",
+  "main_inputs": [
+    {
+      "id": "A1",
+      "text": "昨天下午给女儿打电话，她没接。我就觉得她嫌我烦，心里挺失落的，后来把手机放一边，也没再打。"
+    },
+    {
+      "id": "A2",
+      "text": "我有点分不清，“她没接电话”和“她嫌我烦”，不都是刚才那件事吗？为什么要分开？"
+    },
+    {
+      "id": "A3",
+      "text": "你说的我大概明白了，但心里还是堵着。我现在不太想打分，也不想马上分析，先让我说两句吧。"
+    },
+    {
+      "id": "A4",
+      "text": "我想接着看看刚才那件事。还是用女儿没接电话这个例子，你帮我理一下，不过今天先不打分。"
+    }
+  ],
+  "optional_detour": {
+    "insert_after": "A3",
+    "last_item_replaces": "A4",
+    "inputs": [
+      {"id": "B1", "text": "其实前阵子一个老朋友也很少回我消息，我一下想到好多以前的事，觉得自己好像越来越不重要了。"},
+      {"id": "B2", "text": "嗯，你先陪我待一会儿，不用再问我问题。"},
+      {"id": "B3", "text": "说出来轻松一点了，这件事我暂时说完了。"},
+      {"id": "B4", "condition": "agent_actually_invited_return", "text": "我现在还不想回到练习，想再缓一会儿。"},
+      {"id": "B5", "text": "好，我还是有些难过，不过现在愿意继续刚才那个练习了，今天先不打分。"}
+    ]
+  },
+  "optional_rating": {
+    "condition": "user_chooses_to_resume_rating_after_A4_or_B5",
+    "text": "我现在愿意给刚才那个想法评分了。“她嫌我烦”这句话，我当时相信的程度是7分，失落的强度是6分。"
+  },
+  "live_status": "not_run_by_coding_agent"
+}

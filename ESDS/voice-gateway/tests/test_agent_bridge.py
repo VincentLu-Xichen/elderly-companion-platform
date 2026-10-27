@@ -21,6 +21,13 @@ class AgentBridgeChatClientTests(unittest.IsolatedAsyncioTestCase):
             payloads.append(json.loads(request.content))
             if len(payloads) == 1:
                 return httpx.Response(404)
+            if request.url.path.endswith("/stream"):
+                events = [{"type": "delta", "text": "我在听。"}, {"type": "done"}]
+                return httpx.Response(
+                    200,
+                    headers={"content-type": "text/event-stream"},
+                    text="".join("data: " + json.dumps(event) + "\n\n" for event in events),
+                )
             return httpx.Response(200, json={"reply": "我在听。"})
         client = AgentBridgeChatClient(base_url="http://test", token="test", device_id="test", transport=httpx.MockTransport(handler))
         try:

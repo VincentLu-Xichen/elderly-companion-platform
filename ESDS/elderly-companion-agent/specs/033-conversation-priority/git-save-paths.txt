@@ -1,0 +1,7 @@
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/catalog.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/dialogue.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/learning_request.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/lesson_1.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/runtime.py
+ESDS/elderly-companion-agent/cbt_course_llm_freeform/tests/test_conversation_priority.py
+ESDS/elderly-companion-agent/specs/033-conversation-priority

@@ -4,7 +4,7 @@ from typing import Any
 
 
 LESSON_1_ID = "lesson-1"
-LESSON_1_VERSION = "7.5-two-lesson-backend"
+LESSON_1_VERSION = "7.9.3-deferred-rating-scale"
 LESSON_2_ID = "lesson-2"
 LESSON_2_VERSION = "6.2-contrast-reply"
 LESSON_VERSIONS = {LESSON_1_ID: LESSON_1_VERSION, LESSON_2_ID: LESSON_2_VERSION}

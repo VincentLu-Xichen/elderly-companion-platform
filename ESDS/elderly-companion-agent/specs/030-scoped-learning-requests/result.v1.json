@@ -1,0 +1,648 @@
+{
+  "status": "Validating",
+  "final_version": "7.8.5-scoped-learning-requests",
+  "branch": "harrison",
+  "head": "9469acb90ca4e33f8f8189dcb7e3a961a8c9e59a",
+  "dirty_worktree": true,
+  "experiment_id": "20261024-030-scoped-requests",
+  "metrics": {
+    "attempted_calls": 12,
+    "usage_missing_calls": 0,
+    "known_tokens": {
+      "prompt_tokens": 67734,
+      "completion_tokens": 2473,
+      "total_tokens": 70207
+    },
+    "cost": null,
+    "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+    "turns": 11,
+    "runtime_success": 9,
+    "runtime_errors": 2,
+    "success_with_all_program_checks": 6,
+    "successful_turns_with_failed_checks": [
+      "20261024-122433-030-repair3-A1-D01-t1-4aabc1",
+      "20261024-122704-030-repair4-A1-D01-t4-ba1176",
+      "20261024-122901-030-repair5-A1-D01-t4-396579"
+    ],
+    "provider_failures": 0,
+    "elapsed_ms": 24159,
+    "request_wait_ms": 24076,
+    "env_file_unchanged_all": true,
+    "first_token_wait_ms": null,
+    "automatic_retries": 0
+  },
+  "final_version_live_calls": 0,
+  "final_offline_regression": {
+    "public": 56,
+    "course": 221,
+    "total": 277,
+    "passed": true
+  },
+  "same_json_full_replay": {
+    "api_calls": 0,
+    "source_versions": [
+      "7.8.3 first3",
+      "7.8.4 last1"
+    ],
+    "passed": true,
+    "fresh_live_sample": false
+  },
+  "scope": {
+    "existing_python_changed": [
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/agent.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/catalog.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/lesson_1.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/runtime.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/schemas.py"
+    ],
+    "new_python": [
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/learning_request.py",
+      "ESDS/elderly-companion-agent/cbt_course_llm_freeform/tests/test_learning_request.py",
+      "ESDS/elderly-companion-agent/scripts/run_scoped_request_eval.py",
+      "ESDS/elderly-companion-agent/tests/test_scoped_request_eval.py"
+    ],
+    "second_prompt_unchanged": true,
+    "base_aux_prompts_unchanged": true,
+    "first_prompt_hashes": {
+      "before": "781fec01859aea397c64fd75c25298c2b33dde820c28e6306593c5afde47b281",
+      "r1": "f81b7bf1dacfd90df9119868ada6f241cb0349a319f35456821b19a20e0f8a50",
+      "r2": "b57f9501f77a5c9a6cbaf88c72bbd45f27ab846640f193c997282d203f60ed73",
+      "r3": "a77277d92b9c6e8e091e421652d252a01ae545005da0d4ccb5bf8b767e0d7909",
+      "r4": "a77277d92b9c6e8e091e421652d252a01ae545005da0d4ccb5bf8b767e0d7909",
+      "r5": "a77277d92b9c6e8e091e421652d252a01ae545005da0d4ccb5bf8b767e0d7909",
+      "final": "a77277d92b9c6e8e091e421652d252a01ae545005da0d4ccb5bf8b767e0d7909"
+    },
+    "first_prompt_chars": {
+      "before": 10875,
+      "after": 12313,
+      "r3": 12906
+    },
+    "regression": "56 public + 217 course = 273 passed",
+    "prompt_hash_note": "Canonical UTF-8 prompt strings, not CRLF file byte hashes",
+    "second_prompt_unchanged_r2": true,
+    "second_prompt_unchanged_r3": true,
+    "second_prompt_unchanged_r4": true,
+    "r3_to_r4_prompt_unchanged": true,
+    "second_prompt_unchanged_r5": true,
+    "r3_r4_r5_prompt_identical": true,
+    "final_version": "7.8.5-scoped-learning-requests",
+    "second_prompt_unchanged_final": true,
+    "final_source_fingerprint": "3b1aa3ccdd845dcc5c89fa2e34db530f43ef8fe499ca648460ef1e4fa3ee8c5f",
+    "regression_final": "56 public + 221 course = 277 passed"
+  },
+  "runs": [
+    {
+      "run_id": "20261024-121208-030-A1-D01-t1-33e33d",
+      "series": "after",
+      "turn": 1,
+      "lesson_version": "7.8-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "no_automatic_deferrals": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-121208-030-A1-D01-t1-33e33d",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6439,
+          "completion_tokens": 268,
+          "total_tokens": 6707
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2659,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "no_automatic_deferrals": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-121208-030-A1-D01-t1-33e33d"
+    },
+    {
+      "run_id": "20261024-121225-030-A1-D01-t2-e6feb5",
+      "series": "after",
+      "turn": 2,
+      "lesson_version": "7.8-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "only_ratings_deferred": true,
+        "withheld_not_inferred": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-121225-030-A1-D01-t2-e6feb5",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6542,
+          "completion_tokens": 242,
+          "total_tokens": 6784
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2289,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "only_ratings_deferred": true,
+          "withheld_not_inferred": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-121225-030-A1-D01-t2-e6feb5"
+    },
+    {
+      "run_id": "20261024-121241-030-A1-D01-t3-4e5969",
+      "series": "after",
+      "turn": 3,
+      "lesson_version": "7.8-scoped-learning-requests",
+      "status": "error",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "only_ratings_deferred": true,
+        "withheld_not_inferred": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-121241-030-A1-D01-t3-4e5969",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6727,
+          "completion_tokens": 384,
+          "total_tokens": 7111
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2814,
+        "turn_status": "error",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "only_ratings_deferred": true,
+          "withheld_not_inferred": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-121241-030-A1-D01-t3-4e5969"
+    },
+    {
+      "run_id": "20261024-121426-030-repair2-A1-D01-t1-f2c1c3",
+      "series": "repair2",
+      "turn": 1,
+      "lesson_version": "7.8.1-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "no_automatic_deferrals": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-121426-030-repair2-A1-D01-t1-f2c1c3",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6567,
+          "completion_tokens": 279,
+          "total_tokens": 6846
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2656,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "no_automatic_deferrals": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-121426-030-repair2-A1-D01-t1-f2c1c3"
+    },
+    {
+      "run_id": "20261024-121441-030-repair2-A1-D01-t2-2f1a6c",
+      "series": "repair2",
+      "turn": 2,
+      "lesson_version": "7.8.1-scoped-learning-requests",
+      "status": "error",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "only_ratings_deferred": false,
+        "withheld_not_inferred": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-121441-030-repair2-A1-D01-t2-2f1a6c",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6673,
+          "completion_tokens": 224,
+          "total_tokens": 6897
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2229,
+        "turn_status": "error",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "only_ratings_deferred": false,
+          "withheld_not_inferred": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-121441-030-repair2-A1-D01-t2-2f1a6c"
+    },
+    {
+      "run_id": "20261024-122433-030-repair3-A1-D01-t1-4aabc1",
+      "series": "repair3",
+      "turn": 1,
+      "lesson_version": "7.8.2-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "no_automatic_deferrals": false,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122433-030-repair3-A1-D01-t1-4aabc1",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6651,
+          "completion_tokens": 140,
+          "total_tokens": 6791
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 1638,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "no_automatic_deferrals": false,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122433-030-repair3-A1-D01-t1-4aabc1"
+    },
+    {
+      "run_id": "20261024-122616-030-repair4-A1-D01-t1-76cbeb",
+      "series": "repair4",
+      "turn": 1,
+      "lesson_version": "7.8.3-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "no_automatic_deferrals": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122616-030-repair4-A1-D01-t1-76cbeb",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6651,
+          "completion_tokens": 137,
+          "total_tokens": 6788
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 1647,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "no_automatic_deferrals": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122616-030-repair4-A1-D01-t1-76cbeb"
+    },
+    {
+      "run_id": "20261024-122631-030-repair4-A1-D01-t2-6619de",
+      "series": "repair4",
+      "turn": 2,
+      "lesson_version": "7.8.3-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "only_ratings_deferred": true,
+        "withheld_not_inferred": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122631-030-repair4-A1-D01-t2-6619de",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6757,
+          "completion_tokens": 125,
+          "total_tokens": 6882
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 1658,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "only_ratings_deferred": true,
+          "withheld_not_inferred": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122631-030-repair4-A1-D01-t2-6619de"
+    },
+    {
+      "run_id": "20261024-122646-030-repair4-A1-D01-t3-f126a9",
+      "series": "repair4",
+      "turn": 3,
+      "lesson_version": "7.8.3-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": true,
+        "no_answer_attempts": true,
+        "same_stage": true,
+        "only_ratings_deferred": true,
+        "withheld_not_inferred": true,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122646-030-repair4-A1-D01-t3-f126a9",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 6934,
+          "completion_tokens": 171,
+          "total_tokens": 7105
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 1882,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": true,
+          "no_answer_attempts": true,
+          "same_stage": true,
+          "only_ratings_deferred": true,
+          "withheld_not_inferred": true,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122646-030-repair4-A1-D01-t3-f126a9"
+    },
+    {
+      "run_id": "20261024-122704-030-repair4-A1-D01-t4-ba1176",
+      "series": "repair4",
+      "turn": 4,
+      "lesson_version": "7.8.3-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": false,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122704-030-repair4-A1-D01-t4-ba1176",
+        "attempted_calls": 2,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 4176,
+          "completion_tokens": 261,
+          "total_tokens": 4437
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 2942,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": false,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122704-030-repair4-A1-D01-t4-ba1176"
+    },
+    {
+      "run_id": "20261024-122901-030-repair5-A1-D01-t4-396579",
+      "series": "repair5",
+      "turn": 4,
+      "lesson_version": "7.8.4-scoped-learning-requests",
+      "status": "success",
+      "checks": {
+        "same_case": true,
+        "same_record": true,
+        "not_confirmed": true,
+        "not_completed": true,
+        "no_personal_boundary": true,
+        "pause_scope": false,
+        "no_invented_scores": true
+      },
+      "summary": {
+        "run_id": "20261024-122901-030-repair5-A1-D01-t4-396579",
+        "attempted_calls": 1,
+        "usage_missing_calls": 0,
+        "known_tokens": {
+          "prompt_tokens": 3617,
+          "completion_tokens": 242,
+          "total_tokens": 3859
+        },
+        "cost": null,
+        "cost_note": "Not priced; no verified per-request cache/pricing breakdown. Missing usage is unknown, not zero.",
+        "elapsed_ms": 1745,
+        "turn_status": "success",
+        "program_checks": {
+          "same_case": true,
+          "same_record": true,
+          "not_confirmed": true,
+          "not_completed": true,
+          "no_personal_boundary": true,
+          "pause_scope": false,
+          "no_invented_scores": true
+        },
+        "first_token_wait_ms": null,
+        "automatic_retries": 0,
+        "env_file_unchanged": true
+      },
+      "path": "C:\\Users\\20779\\Desktop\\agent\\elderly-companion-platform\\ESDS\\elderly-companion-agent\\test-results\\dialogue-evals\\20261024-122901-030-repair5-A1-D01-t4-396579"
+    }
+  ],
+  "human_review": {
+    "reviewer": "Coding Agent, no new user/teacher acceptance",
+    "first_three_turns": "本次固定输入在7.8.3取得真实连续回应和正确局部状态，较029第二轮直接失败有改进；单次调试样本不能证明稳定。",
+    "pause": "7.8.3/7.8.4真实停课均未通过，7.8.5同JSON离线回放才通过；不标为真实体验通过。",
+    "wording": "7.8.3首轮末尾仍邀请说明最想被听到的部分；第三轮“应该已经记着”及核对邀请可斟酌。",
+    "disposition": "保留局部修复为Validating，不宣布A基座优化完成，不启动B/C/D。"
+  },
+  "limits": [
+    "No successful full live 4-turn capture under final frozen code",
+    "No same-final-candidate repeats or held-out variants",
+    "No new live normal scoring/D02/negation/report controls after budget reduction",
+    "No full course, website, real-user DB/refresh or cross-course adoption check",
+    "Final source changes are one coherent protocol package, not isolated prompt causal evidence"
+  ],
+  "no_commit_tag_push": true,
+  "cost": null
+}

@@ -1,0 +1,25 @@
+{
+  "suite_version": "cbt12-scoped-requests/1",
+  "fixture_version": "cbt12-a1-fixtures/1; first-belief-rating unchanged",
+  "note": "固定合成局部连续对话，不是整课。expect与后续输入不提供给教学模型。D01前三句及D02首句沿用029，D01第4句新增明确暂停出口；用户授权新请求总计最多12次，无自动重试。",
+  "cases": [
+    {"id": "A1-D01", "lesson": "lesson-1", "fixture": "first-belief-rating", "turns": [
+      {"input": "我现在一想到昨天那场考试就很难受。回宿舍哭了很久，觉得自己特别没用，今天也不想见人。", "expect": "listen"},
+      {"input": "先别让我打分，也别急着讲道理。我只是想把这股难受说出来。", "expect": "defer_both"},
+      {"input": "我还是很难受，但想看看刚才那件事怎么分。先帮我分清发生的事和脑子里的那句话，今天先不评分。", "expect": "defer_both"},
+      {"input": "今天这节课先停在这里吧，我现在不想继续课程了。", "expect": "pause_lesson"}
+    ]},
+    {"id": "A1-D02", "lesson": "lesson-1", "fixture": "first-belief-rating", "turns": [
+      {"input": "我这两天一想到那道题就掉眼泪。现在脑子很乱，你刚才说的我也听不进去，让我缓一会儿。", "expect": "listen"},
+      {"input": "缓过来一些了。昨天没做出那道题是发生的事，‘别人肯定都会，只有我不会’是我的想法，我想接着看看这两部分。", "expect": "continue"}
+    ]},
+    {"id": "L-N01", "lesson": "lesson-1", "fixture": "first-belief-rating", "turns": [
+      {"input": "那条想法的相信程度是0分。", "expect": "belief_zero"},
+      {"input": "担心的情绪强度是6分。", "expect": "both_scores"}
+    ]},
+    {"id": "L-C01", "lesson": "lesson-1", "fixture": "first-belief-rating", "turns": [
+      {"input": "我不是要暂停这节课，只是想让你先听我说。", "expect": "listen"},
+      {"input": "朋友说‘我不想继续这节课了’，那是他说的。我这会儿还想继续了解想法和事实的区别。", "expect": "continue"}
+    ]}
+  ]
+}

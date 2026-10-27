@@ -55,6 +55,7 @@ def new_course_state(lesson_id: str, *, reflection_policy: str | None = None) ->
         **({"lesson2_flow": lesson2_flow.new_flow()} if lesson_id == "lesson-2" else {}),
         **({"navigation_version": navigation.VERSION} if lesson_id == "lesson-1" else {}),
         **({"dialogue_policy": dialogue.VERSION} if lesson_id == "lesson-1" else {}),
+        **({"classroom_dialogue": dialogue.new_flow()} if lesson_id == "lesson-1" else {}),
         **(
             {"interaction_response_version": interaction.RESPONSE_VERSION}
             if lesson_id in {"lesson-1", "lesson-2"}
