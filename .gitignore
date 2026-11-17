@@ -1,33 +1,27 @@
-# Local IDE settings
-.idea/
-.vscode/
-*.iml
-
-# Python environments and generated files
-**/.venv/
-**/venv/
-**/__pycache__/
-*.py[cod]
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# Local secrets and environment files
+# Private configuration and participant records
 .env
 .env.*
 !.env.example
-
-# Local runtime data
+/data/
+**/local-secrets.json
 *.db
+*.db-*
 *.sqlite
 *.sqlite3
-logs/
 
-# OS and build output
-.DS_Store
-dist/
+# Local environments and generated files
+/.venv/
+/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
 build/
-
-# Local product planning and idea notes
-/docs/
+dist/
+/logs/
+*.log
+.DS_Store
+.idea/
+.vscode/

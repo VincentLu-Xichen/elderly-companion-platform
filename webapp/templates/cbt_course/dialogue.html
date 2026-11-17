@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第一课 · 认识想法与行动</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/cbt_course/dialogue.css">
+  <script src="/static/cbt_course/dialogue.js" defer></script>
+</head>
+<body>
+  <main class="dialogue-page" data-id="{{ conversation.id if conversation else '' }}">
+    <header class="dialogue-header"><a href="/cbt-course">← 课程目录</a><div><p>第一课 · 体验版 {{ (conversation.lesson_version if conversation else lesson_version).split('-')[0] }}</p><h1>认识想法与行动</h1></div><button id="dialogue-refresh" type="button">刷新记录</button></header>
+    {% if preview_kind == 'live' %}<p class="dialogue-notice">真实模型体验：使用本次独立体验记录。文字对话由已配置的模型回复；页面闲置不会自动调用模型。</p>{% endif %}
+    {% if offline_demo %}<p class="dialogue-notice">离线流程演示：回复由规则模拟，用于检查页面和保存流程，不判断真实理解程度。</p>{% endif %}
+    {% if not conversation %}
+    <section class="dialogue-welcome"><h2>从一件小事开始</h2><p>一起区分事情、想法、心情和做法。可以随时提问、先聊别的事，或暂停。学习记录由您核对，课后安排也由您选择。</p>
+      {% if consented %}<button id="dialogue-start" type="button">进入或继续第一课</button>{% else %}<a href="/app#consent-card">请先确认数据记录告知</a>{% endif %}
+    </section>
+    {% if history %}<section class="dialogue-welcome"><h2>本课记录</h2>{% for item in history %}<p><a href="/cbt-course/dialogue/{{ item.id }}">{{ item.started_at|utc8 }} · {{ {'active':'进行中','ended':'本次已结束','completed':'已完成'}.get(item.status,item.status) }}</a></p>{% endfor %}</section>{% endif %}
+    {% else %}
+    <div class="dialogue-layout">
+      <section class="dialogue-main"><div class="dialogue-status"><strong id="dialogue-phase"></strong><span id="dialogue-mode"></span></div>
+        <div id="dialogue-messages" aria-live="polite"></div>
+        <form id="dialogue-form"><label for="dialogue-input">说说您的想法</label><textarea id="dialogue-input" rows="3" maxlength="2000" placeholder="可以慢慢说，也可以告诉我哪里没讲清楚……"></textarea>
+          {% if offline_demo %}<p class="dialogue-help">演示中可使用“情境：……；想法：……；情绪：……；行为：……”整理内容；评分可写“相信程度0分”“情绪强度3分”，目标可写“目标：……”。</p>{% endif %}
+          <div class="dialogue-send"><span id="dialogue-save">一轮成功后加密保存</span><button type="submit" id="dialogue-send">发送</button></div>
+        </form><p id="dialogue-error" role="alert" hidden></p><button id="dialogue-retry" type="button" hidden>重试上一轮原输入</button>
+        <button id="dialogue-session-resume" type="button" hidden>恢复学习</button>
+      </section>
+      <details class="dialogue-notebook"><summary>查看学习记录与材料</summary><p id="dialogue-case"></p><dl id="dialogue-records"></dl><p id="dialogue-confirmation"></p>
+        <section id="dialogue-goal"></section><section id="dialogue-results"></section>
+        <section id="dialogue-material" class="dialogue-material" aria-label="当前学习材料"></section>
+        <p class="dialogue-help">这里仅展示已保存的记录。可以在对话中提出修改、跳过或暂停。本课用于学习与研究。</p>
+      </details>
+    </div>
+    {% endif %}
+    {% if not conversation %}<p id="dialogue-error" role="alert" hidden></p>{% endif %}
+  </main>
+  <script id="dialogue-initial" type="application/json">{{ conversation|tojson }}</script>
+</body>
+</html>

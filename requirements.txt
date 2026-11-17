@@ -1,0 +1,23 @@
+# Full dependency lock from verified clean Python3.13 environment.
+annotated-types==0.8.0
+anyio==4.16.0
+argon2-cffi==25.1.0
+argon2-cffi-bindings==26.2.0
+certifi==2026.7.22
+cffi==2.1.1
+click==8.5.1
+cryptography==45.0.5
+fastapi==0.116.1
+h11==0.16.0
+idna==3.20
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+pycparser==3.12
+pydantic==2.11.7
+pydantic_core==2.33.2
+python-dotenv==1.1.0
+SQLAlchemy==2.0.41
+starlette==0.47.3
+typing-inspection==0.4.5
+typing_extensions==4.16.0
+uvicorn==0.35.0

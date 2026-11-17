@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>第一课独立测试</title><link rel="stylesheet" href="/static/cbt_course/dialogue.css"><link rel="stylesheet" href="/static/entry.css"><script src="/static/entry.js" defer></script></head>
+<body><main class="entry"><p>第一课 · {{ version }}</p><h1>认识想法与行动</h1><p>当前独立包只提供第一课。登录、刷新和查看记录不会自动调用模型。发送文字才会请求模型。</p>
+{% if not participant %}<section><h2>输入测试邀请码</h2><form id="login-form"><label for="invite-code">邀请码</label><input id="invite-code" name="code" required autocomplete="off"><button type="submit">进入测试</button></form></section>
+{% else %}<p>当前测试账号：{{ participant.label }} <button id="logout" type="button">退出登录</button></p>
+{% if not consented %}<section id="consent-card"><h2>测试数据记录告知</h2><p>输入、回复、学习记录和运行状态会保存在本机，用于课程研究与系统测试。请使用合成场景，不输入姓名、电话或病历信息。</p><label><input id="agree" type="checkbox">我已阅读并同意记录本次测试数据</label><button id="consent" type="button" disabled>确认并进入第一课</button></section>
+{% else %}<section><h2>开始或继续</h2><a class="primary" href="/cbt-course/dialogue">进入或继续第一课</a><p>已有记录会自动保留；普通结束、暂停和完成课程是不同状态。</p></section>{% endif %}{% endif %}
+<p id="entry-error" role="alert"></p><p class="note">本项目用于学习研究和系统测试，不代替心理治疗、医疗诊断或紧急救援。</p></main></body></html>
